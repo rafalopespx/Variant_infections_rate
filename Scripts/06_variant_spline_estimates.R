@@ -3,54 +3,16 @@ rm(list = ls())
 gc()
 
 ## Loading Libraries
-packs = c("tidyverse", "vroom", "jsonlite", "httr")
+packs = c("tidyverse", "vroom", "jsonlite", "httr", "geofacet")
 lapply(packs,require, character.only = TRUE)
 
 ## Loading functions
-source("Scripts/functions.R")
+source("Scripts/Functions/functions.R")
 # source("Scripts/estimate_rt_ro_fun.R")
 
-## Reading the database
-variants_count<-vroom("Data/variant_counts_us.csv.xz")
+infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv.xz")
 
-# variants_count_wide<-variants_count |> 
-#   pivot_wider(id_cols = c("epiweek", "name_states"), 
-#               names_from = "voc_cdc", 
-#               values_from = c("freq", "n")) |> 
-#   {\(.) {replace(.,is.na(.),0)}}() ## Trick to use replace(is.na(.), 0)
-
-## CovidEstim State-level Estimates
-url<-GET(paste('https://api2.covidestim.org/latest_runs?geo_type=eq.state&select=*%2Ctimeseries(*)'))
-
-covidestim_state<-fromJSON(rawToChar(url$content))
-name_states<-covidestim_state$geo_name
-covidestim_state<-covidestim_state[[8]]
-names(covidestim_state)<-name_states
-covidestim_state<-covidestim_state |> 
-  bind_rows(.id = "name_states") |> 
-  select(name_states, date, infections, infections_p2_5, infections_p97_5) |> 
-  mutate(epiweek = end.of.epiweek(as.Date(date)))
-
-## Removing heavy objects
-rm(url)
-gc()
-
-## Restriging the dates of analysis on both data-set
-estimates_variant<-variants_count |>
-  dplyr::rename(variant = voc_cdc) |> 
-  left_join(covidestim_state,
-            by = c("epiweek","name_states")) |> #merges CovidEstim data with our data and keeps only 
-  filter(!is.na(infections))|>
-  # select(-c(n.Other,freq.Other)) |> 
-  select_if(function(col)max(col) != 0) |> 
-  dplyr::mutate(across(starts_with("infections"), ~.x/7)) |> 
-  group_by(name_states, variant) |>
-  complete(epiweek = seq.Date(min(epiweek), 
-                              max(epiweek), 
-                              by = "day")) |>
-  fill(c(n, freq, date, starts_with("infections")), 
-       .direction = "down") |> 
-  mutate(I = round(infections, 0))
+infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
 #run for everything -Other
 rt_fun <- function(df){
@@ -104,71 +66,59 @@ rt_fun <- function(df){
   
   #merges the Rt value with the other variant data and renames Rt to have variant suffix
   merge <- df %>%
-    dplyr::mutate(date = as.Date(date)) |> 
-    arrange(date) %>% #keep in week so that the day variable lines up with the first week
+    # mutate(date = as.Date(date)) |> 
+    arrange(days) %>% #keep in week so that the day variable lines up with the first week
     mutate(day = 1:nrow(df)) %>% #used to merge with the estimate_R variable output for the day
-    left_join(rt_df, by = "day") |> 
-    filter(!is.na(Rt)) |> 
-    select(name_states, epiweek, variant, I, Rt, lower, upper)
+    left_join(rt_df, by = c("day")) |> 
+    dplyr::mutate(date_start = seq.Date(from = min(days) + non0, 
+                                        length.out = nrow(df),
+                                        by = "days"),
+                  date_end = seq.Date(from = min(days) + non0 + 15, 
+                                      length.out = nrow(df),
+                                      by = "days")) |> 
+    select(days, date_start, date_end, name_states, variant, I, Rt, lower, upper)
+  #renames the smooth_spline output to have variant prefix
+  #rename_with(.fn = ~paste0(name,"_",.), .cols = c("Rt", "rtlowci", "rtupci")) 
   
   return(merge)
   
 }
 
-rt_safely<-possibly(.f = rt_fun, quiet = T)
+## rt_fun tryCatch
+rt_safe<-function(x){
+  result <- tryCatch(rt_fun(df = x), error = function(err) NA)
+  return(result)
+}
 
 ## Creating estimates for Rt
 ## Try do it in parallel
 rt_list<-c()
 
-## Vectors to for loops
-variants<-unique(estimates_variant$variant)
+## Estimates to use
+estimates_df<-infections_variants_daily
 
-states<-unique(estimates_variant$name_states)
+## Vectors to for loops
+variants<-unique(estimates_df$variant)
+
+states<-unique(estimates_df$name_states)
 
 for (i in variants) {
   for (j in states) {
     
-    tmp <- estimates_variant |> 
+    tmp <- estimates_df |> 
       filter(variant == i, 
              name_states == j)
     
     ## Try to handle when any Rt fails and continue it 
-    rt_list[[i]][[j]]<- rt_safely(tmp)
-    
-    ## Prompting messages, to monitor progress
+    rt_list[[i]][[j]]<-rt_safe(x = tmp)
     rm(tmp)
     gc()
     cat("Finished state: ", j, "\n")
   }
-  
-  ## Bind rows to a single data.frame for the Variant over all states
-  rt_list[[i]]<-rt_list[[i]] |>
-    bind_rows(.id = "name_state")
+  # rt_list[[i]]<-rt_list[[i]] |> 
+  #   reduce(rbind)
   
   ## Prompting messages, to monitor progress
   cat("Finished variant: ", i, "over all states \n")
 }
-
-
-test<-rt_list |> 
-  bind_rows(.id = "variant")
-
-
-test |> 
-  filter(name_state == "Connecticut") |> 
-  ggplot(aes(x = epiweek, y = Rt, 
-             ymin = lower, ymax = upper, 
-             col = variant, fill = variant))+
-  geom_line()+
-  geom_ribbon(alpha = .5)+
-  scale_x_date(date_breaks = "2 months", 
-               date_labels = "%b-%y")+
-  theme_minimal()+
-  theme(legend.position = "bottom", 
-        axis.text.x = element_text(angle = 90))+
-  facet_wrap(variant~., scales = "free_y")
-  # facet_geo(name_states~., grid = "us_state_grid1")
-  
-
 

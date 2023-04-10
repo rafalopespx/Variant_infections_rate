@@ -3,48 +3,16 @@ rm(list = ls())
 gc()
 
 ## Loading Libraries
-packs = c("tidyverse", "vroom", "jsonlite", "httr", "EpiEstim")
+packs = c("tidyverse", "vroom", "jsonlite", "httr", "geofacet")
 lapply(packs,require, character.only = TRUE)
 
 ## Loading functions
 source("Scripts/Functions/functions.R")
 # source("Scripts/estimate_rt_ro_fun.R")
 
-## Reading the database
-variants_count<-vroom("Data/variant_counts_us.csv.xz")
+infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv.xz")
 
-# variants_count_wide<-variants_count |> 
-#   pivot_wider(id_cols = c("epiweek", "name_states"), 
-#               names_from = "voc_cdc", 
-#               values_from = c("freq", "n")) |> 
-#   {\(.) {replace(.,is.na(.),0)}}() ## Trick to use replace(is.na(.), 0)
-
-## CovidEstim State-level Estimates
-url<-GET(paste('https://api2.covidestim.org/latest_runs?geo_type=eq.state&select=*%2Ctimeseries(*)'))
-
-covidestim_state<-fromJSON(rawToChar(url$content))
-name_states<-covidestim_state$geo_name
-covidestim_state<-covidestim_state[[8]]
-names(covidestim_state)<-name_states
-covidestim_state<-covidestim_state |> 
-  bind_rows(.id = "name_states") |> 
-  select(name_states, date, infections, infections_p2_5, infections_p97_5) |> 
-  mutate(epiweek = end.of.epiweek(as.Date(date)))
-
-## Removing heavy objects
-rm(url)
-gc()
-
-## Restriging the dates of analysis on both data-set
-estimates_variant<-variants_count |>
-  dplyr::rename(variant = voc_cdc) |> 
-  left_join(covidestim_state,
-            by = c("epiweek","name_states")) |> #merges CovidEstim data with our data and keeps only 
-  filter(!is.na(infections))|>
-  # select(-c(n.Other,freq.Other)) |> 
-  select_if(function(col)max(col) != 0) |>
-  mutate(infections = infections*freq) |> 
-  mutate(I = round(infections, 0))
+infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
 # configuration of input data for R estimate
 # essentially we are estimating the serial intervals of SARS-CoV-2 (Omicron variant specific)

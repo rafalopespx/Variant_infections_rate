@@ -1,11 +1,21 @@
-library(tidyverse)
-library(zoo)
+## Cleaning the ambient
+rm(list = ls())
+gc()
 
-# Load the dataset
-data <- vroom("Data/variant_counts_us.csv.xz")
+## Loading Libraries
+packs = c("tidyverse", "vroom", "jsonlite", "httr", "geofacet")
+lapply(packs,require, character.only = TRUE)
+
+## Loading functions
+source("Scripts/Functions/functions.R")
+# source("Scripts/estimate_rt_ro_fun.R")
+
+infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv.xz")
+
+infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
 # Filter the time series of infections when it has over than 10 cases
-filtered_data <- data %>%
+filtered_data <- infections_variants_daily %>%
   group_by(state, variant) %>%
   filter(sum(infections) >= 10) %>%
   ungroup()
@@ -19,7 +29,8 @@ estimate_Rt <- function(state, variant) {
   ts_data <- zoo(subset_data$infections, subset_data$dates)
   
   # Estimate the Rt using the EpiEstim package
-  epi_result <- EpiEstim::estimate_R(zoo::na.omit(ts_data), method = "parametric_si",
+  epi_result <- EpiEstim::estimate_R(ts_data, 
+                                     method = "parametric_si",
                                      config = EpiEstim::make_config(list(mean_si = 4.7, std_si = 2.9)))
   
   # Return the estimated Rt as a data frame
