@@ -41,48 +41,9 @@ estimates_variant<-variants_count_wide |>
             by = c("epiweek","name_states")) |> #merges CovidEstim data with our data and keeps only 
   filter(!is.na(infections))|>
   select(-c(n_Other,freq_Other))
-# |>
-#   select_if(function(col)max(col) != 0)
-
-# estimates_weekly<-estimates_variant |>       
-#   # cutting off the frequencies less than 0.02, and setting as 0
-#   dplyr::mutate(across(starts_with("freq"), ~ifelse(.x <= 0.02, 0, .x))) |>  
-#   #calculate variant specific number of infections
-#   dplyr::mutate(across(starts_with("freq"), list("infections" = ~.x*infections))) |> 
-#   #round infections to whole individuals 
-#   dplyr::mutate(across(ends_with("infections"), ~round(.x, 0))) |> 
-#   #remove unnecessary columns
-#   # select(days, ends_with("infections")) |>
-#   #removes variants with no infections (after freq <= -.0.02) and thus no frequency
-#   select_if(function(col) max(col) != 0) |>
-#   # Creating Rt
-#   dplyr::mutate(across(ends_with("infections"), list("Rt" = ~round((.x/lag(.x))^(5.8), 2)))) |> 
-#   ## Selecting columns of interest
-#   select(epiweek, name_states, ends_with("_infections_Rt")) |>
-#   #pivot longer to split by variant for estimate_R
-#   pivot_longer(cols = c(ends_with("_Rt")),
-#                values_to = "Rt",
-#                names_to = "variant") |>
-#   #removed because it is annoying
-#   dplyr::mutate(variant = str_remove(variant, "freq_")) |>
-#   dplyr::mutate(variant = str_remove(variant, "_infections_Rt")) |>
-#   dplyr::arrange(variant) |> 
-#   filter(!is.nan(Rt),!is.infinite(Rt))
-# 
-# estimates_weekly |> 
-#   filter(name_states == "Connecticut", Rt < 10) |> 
-#   ggplot(aes(x = epiweek, y = Rt, col = variant, fill = variant))+
-#   geom_line()+
-#   # facet_geo(name_states~., grid = "us_state_grid1", scales = "free_y")+
-#   scale_x_date(date_breaks = "4 months", date_labels = "%b-%Y")+
-#   theme_minimal()+
-#   theme(axis.text.x = element_text(angle = 90),
-#         legend.position = "bottom")+
-#   scale_fill_brewer(palette = "Paired", name = "VOCs", aesthetics = c("color", "fill"))+
-#   labs(x = "Date", y = "Infections counts \n per variant")
 
 ## function to convert into daily counts, respecting the frequencies generated
-daily_spread<-function(data, infections.col, week.col, freq.col){
+daily_spread<-function(data, infections.col, week.col){
   
   ## Creating states var to loop over it
   states<-unique(data$name_states)
@@ -96,7 +57,9 @@ daily_spread<-function(data, infections.col, week.col, freq.col){
       # arrange by week for creating the days
       dplyr::arrange(data[[week.col]]) |> 
       # create variable for days
-      dplyr::mutate(days = epiweek) |> 
+      dplyr::mutate(days = epiweek) |>
+      # dividing by 7 to make it an average of the week
+      dplyr::mutate(across(starts_with("infections"), ~.x/7)) |> 
       # Complete the dates
       complete(days = seq.Date(min(data[[week.col]]), 
                                max(data[[week.col]]), 
@@ -112,9 +75,10 @@ daily_spread<-function(data, infections.col, week.col, freq.col){
       #removes variants with no infections (after freq <= -.0.02) and thus no frequency
       select_if(function(col) max(col) != 0) |>
       #round infections to whole individuals 
-      dplyr::mutate(across(ends_with("infections"), ~round(.x, 0))) |> 
-      # Creating Rt
-      dplyr::mutate(across(ends_with("infections"), list("Rt" = ~round((.x/lag(.x))^(5.8), 2))))
+      dplyr::mutate(across(ends_with("infections"), ~round(.x, 0))) 
+    # |> 
+    #   # Creating Rt
+    #   dplyr::mutate(across(ends_with("infections"), list("Rt" = ~round((.x/lag(.x))^(5.8), 2))))
     
     ## Infections data.frame
     data_infections<- data |> 
@@ -130,29 +94,24 @@ daily_spread<-function(data, infections.col, week.col, freq.col){
       dplyr::arrange(variant) |> 
       filter(I != 0)
     
-    ## Rt data.frame
-    data_rt<-data |> 
-      ## Selecting columns of interest
-      select(days, ends_with("_Rt")) |> 
-      #pivot longer to split by variant for estimate_R
-      pivot_longer(cols = c(ends_with("_Rt")),
-                   values_to = "Rt",
-                   names_to = "variant") |>
-      #removed because it is annoying
-      dplyr::mutate(variant = str_remove(variant, "freq_")) |>
-      dplyr::mutate(variant = str_remove(variant, "_infections_Rt")) |>
-      dplyr::arrange(variant) |> 
-      filter(Rt != 0)
+    # ## Rt data.frame
+    # data_rt<-data |> 
+    #   ## Selecting columns of interest
+    #   select(days, ends_with("_Rt")) |> 
+    #   #pivot longer to split by variant for estimate_R
+    #   pivot_longer(cols = c(ends_with("_Rt")),
+    #                values_to = "Rt",
+    #                names_to = "variant") |>
+    #   #removed because it is annoying
+    #   dplyr::mutate(variant = str_remove(variant, "freq_")) |>
+    #   dplyr::mutate(variant = str_remove(variant, "_infections_Rt")) |>
+    #   dplyr::arrange(variant) |> 
+    #   filter(Rt != 0)
     
     ## Joining
-    data_join<-data_infections |> 
-      left_join(data_rt, by = c("days", "variant"))
-    
-    # ## Create a list by variant ready to calculate estimate_R
-    # data<-data |>
-    #   group_by(variant) |>
-    #   arrange(variant) |>
-    #   group_split()
+    data_join<-data_infections 
+    # |> 
+    #   left_join(data_rt, by = c("days", "variant"))
     
   })
   
@@ -166,21 +125,20 @@ estimates_variant_main<-estimates_variant |>
                infections.col = "infections")
 
 estimates_df<-estimates_variant_main |> 
-  bind_rows(.id = "name_states") 
+  bind_rows(.id = "name_states")
 
 estimates_df |> 
-  filter(name_states == "Connecticut", Rt < 10) |> 
-  ggplot(aes(x = days, y = Rt, col = variant, fill = variant))+
+  filter(name_states == "Connecticut") |>
+  ggplot(aes(x = days, y = I, col = variant, fill = variant))+
   geom_line()+
-  # facet_geo(name_states~., grid = "us_state_grid1", scales = "free_y")+
   scale_x_date(date_breaks = "4 months", date_labels = "%b-%Y")+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 90),
         legend.position = "bottom")+
-  scale_fill_brewer(palette = "Paired", name = "VOCs", aesthetics = c("color", "fill"))+
-  labs(x = "Date", y = "Rt \n per variant", subtitle = "Connecticut")+
-  facet_wrap(variant~., scales = "free_y")+
-  geom_line(aes(x = days, y = 1, col = "Rt = 1"), show.legend = F)
+  scale_fill_brewer(palette = "Paired", 
+                    name = "VOCs", 
+                    aesthetics = c("color", "fill"))+
+  labs(x = "Date", y = "Rt \n per variant", subtitle = "Connecticut")
 
 #run for everything -Other
 rt_fun <- function(df){
@@ -252,10 +210,11 @@ rt_fun <- function(df){
   
 }
 
-# ## Rt list to estimates Rt per estimates infections
-# rt_safely<-possibly(.f = rt_fun, 
-#                     # otherwise = NA_real_,
-#                     quiet = T)
+## rt_fun tryCatch
+rt_safe<-function(x){
+  result <- tryCatch(rt_fun(df = x), error = function(err) NA)
+  return(result)
+}
 
 ## Creating estimates for Rt
 ## Try do it in parallel
@@ -274,22 +233,24 @@ for (i in variants) {
              name_states == j)
     
     ## Try to handle when any Rt fails and continue it 
-    rt_list[[i]][[j]]<-rt_fun(df = tmp)
+    rt_list[[i]][[j]]<-rt_safe(x = tmp) |> 
+      mutate(name_states = j)
     rm(tmp)
     gc()
     cat("Finished state: ", j, "\n")
   }
-  rt_list[[i]]<-rt_list[[i]] |>
-    bind_rows(.id = "name_state")
+  rt_list[[i]]<-rt_list[[i]] |> 
+    reduce(rbind)
   
   ## Prompting messages, to monitor progress
   cat("Finished variant: ", i, "over all states \n")
 }
 
-test<-rt_list |> 
-  bind_rows()
+test<-rt_list
 
-rt_list$`Omicron BA.1*` |> 
+test2<-map(test, reduce(.x = ~.x, .f = rbind))
+
+test2 |> 
   # filter(Rt < 10) |>
   ggplot(aes(x = date_start, y = Rt, 
              ymin = lower, ymax = upper, 
@@ -302,7 +263,7 @@ rt_list$`Omicron BA.1*` |>
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 90))
 
-rt_list2<-lapply(estimates_list, function(x){
+# rt_list2<-lapply(estimates_list, function(x){
   x<-x |> 
     filter(variant == x, 
            name_states == y)

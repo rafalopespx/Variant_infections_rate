@@ -7,7 +7,7 @@ packs<-c("tidyverse", "vroom")
 lapply(packs, require, character.only = TRUE)
 
 ## Loading functions
-source("Scripts/functions.R")
+source("Scripts/Functions/functions.R")
 
 ## Loading the metadata and states
 metadata<-vroom("Data/metadata_2023-03-07/metadata.tsv")
@@ -35,10 +35,7 @@ metadata <- metadata |>
                                    pattern = 'BA.1', 
                                    perl = TRUE) ~ 'Omicron BA.1*',
                              grepl(x = pango_lineage, 
-                                   pattern = 'BA.2.75', 
-                                   perl = TRUE) ~ 'Omicron BA.2.75*',
-                             grepl(x = pango_lineage, 
-                                   pattern = '^(?!.*BA.2.75)*BA.2.*$', 
+                                   pattern = 'BA.2', 
                                    perl = TRUE) ~ 'Omicron BA.2*',
                              grepl(x = pango_lineage, 
                                    pattern = 'BA.3', 
@@ -50,20 +47,11 @@ metadata <- metadata |>
                                    pattern = 'BA.5', 
                                    perl = TRUE) ~ 'Omicron BA.5*', 
                              grepl(x = pango_lineage, 
-                                   pattern = 'BQ.1', 
-                                   perl = TRUE) ~ 'Omicron BQ.1*',
-                             grepl(x = pango_lineage, 
-                                   pattern = 'BJ.1', 
-                                   perl = TRUE) ~ 'Omicron BJ.1*',
-                             grepl(x = pango_lineage, 
                                    pattern = 'XBB.1.5', 
                                    perl = TRUE) ~ 'XBB.1.5*',
                              grepl(x = pango_lineage, 
                                    pattern = 'XBB.1', 
                                    perl = TRUE) ~ 'XBB.1*',
-                             grepl(x = pango_lineage, 
-                                   pattern = '^(?!.*XBB.1 | XBB.1.5).*$', 
-                                   perl = TRUE) ~ 'Recombinant',
                              TRUE ~ 'Other')) |> 
          ## Completing dates to avoid missing dates
          complete(date, nesting(voc_cdc), fill = list(copy_date = 0)) |> 
