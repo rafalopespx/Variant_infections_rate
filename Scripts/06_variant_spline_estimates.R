@@ -86,7 +86,7 @@ rt_fun <- function(df){
 
 ## rt_fun tryCatch
 rt_safe<-function(x){
-  result <- tryCatch(rt_fun(df = x), error = function(err) NA)
+  result <- tryCatch(rt_fun(df = x), error = function(err) x)
   return(result)
 }
 
@@ -109,16 +109,46 @@ for (i in variants) {
       filter(variant == i, 
              name_states == j)
     
+    if(nrow(tmp) == 0) next
+    
     ## Try to handle when any Rt fails and continue it 
     rt_list[[i]][[j]]<-rt_safe(x = tmp)
     rm(tmp)
     gc()
     cat("Finished state: ", j, "\n")
   }
-  # rt_list[[i]]<-rt_list[[i]] |> 
-  #   reduce(rbind)
+  rt_list[[i]]<-bind_rows(rt_list[[i]])
   
   ## Prompting messages, to monitor progress
   cat("Finished variant: ", i, "over all states \n")
 }
+
+test<-lapply(test, setDF)
+
+test2<-rbindlist(test, fill = TRUE, idcol = T)
+
+
+flattenlist <- function(x){  
+  morelists <- sapply(x, function(xprime) class(xprime)[1]=="list")
+  out <- c(x[!morelists], unlist(x[morelists], recursive=FALSE))
+  if(sum(morelists)){ 
+    Recall(out)
+  }else{
+    return(out)
+  }
+}
+
+test3<-rt_list
+
+test4<-flattenlist(test3)
+
+df <- do.call(rbind, lapply(rt_list, data.frame))
+
+df <- data.frame(lapply(, function(x) Reduce(c, x)))
+
+
+
+
+
+
 

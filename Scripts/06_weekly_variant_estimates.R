@@ -12,7 +12,9 @@ source("Scripts/Functions/functions.R")
 
 infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv.xz")
 
-infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
+estimates_variant<-infections_variants_weekly
+
+# infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
 # configuration of input data for R estimate
 # essentially we are estimating the serial intervals of SARS-CoV-2 (Omicron variant specific)
@@ -83,9 +85,6 @@ for (i in variants) {
   ## Prompting messages, to monitor progress
   cat("Finished variant: ", i, "over all states \n")
 }
-
-
-rt_safely<-possibly(.f = rt_fun, quiet = T)
 
 rt_list[[1]] |> 
   filter(name_states == "Connecticut") |>
