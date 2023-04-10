@@ -138,14 +138,15 @@ flattenlist <- function(x){
   }
 }
 
-test3<-rt_list
+test<-bind_rows(rt_list)
 
-test4<-flattenlist(test3)
 
-df <- do.call(rbind, lapply(rt_list, data.frame))
-
-df <- data.frame(lapply(, function(x) Reduce(c, x)))
-
+test |> 
+  filter(name_states == "Connecticut") |> 
+  ggplot(aes(x = days, y = Rt, ymin = upper, ymax = lower, col = variant, fill = variant))+
+  geom_line()+
+  geom_ribbon(alpha = .5)+
+  theme_minimal()
 
 
 
