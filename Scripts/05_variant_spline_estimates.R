@@ -127,6 +127,9 @@ estimates_variant_main<-estimates_variant |>
 estimates_df<-estimates_variant_main |> 
   bind_rows(.id = "name_states")
 
+vroom_write(x = estimates_df, 
+            file = "Data/infections_estimates_variants_daily.csv.xz")
+
 estimates_df |> 
   filter(name_states == "Connecticut") |>
   ggplot(aes(x = days, y = I, col = variant, fill = variant))+
@@ -233,14 +236,13 @@ for (i in variants) {
              name_states == j)
     
     ## Try to handle when any Rt fails and continue it 
-    rt_list[[i]][[j]]<-rt_safe(x = tmp) |> 
-      mutate(name_states = j)
+    rt_list[[i]][[j]]<-rt_safe(x = tmp)
     rm(tmp)
     gc()
     cat("Finished state: ", j, "\n")
   }
-  rt_list[[i]]<-rt_list[[i]] |> 
-    reduce(rbind)
+  # rt_list[[i]]<-rt_list[[i]] |> 
+  #   reduce(rbind)
   
   ## Prompting messages, to monitor progress
   cat("Finished variant: ", i, "over all states \n")
