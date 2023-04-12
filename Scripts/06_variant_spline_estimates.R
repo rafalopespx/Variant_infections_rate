@@ -14,8 +14,19 @@ infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv
 
 infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
+infections_variants_daily<-infections_variants_daily |> 
+  mutate(variant_reduced = case_when(variant == "Omicron BA.2.75*" ~ "Omicron BA.2*", 
+                                     variant %in% c("Omicron BQ.1*", "Omicron BJ.1*") ~ "Omicron BA.5*",
+                                     variant %in% c("XBB.1*" ,"XBB.1.5*") ~ "XBB*", 
+                                     variant == "Recombinant" ~ "Other", 
+                                     TRUE ~ variant))
+
+infections_variants_daily_reduced<-infections_variants_daily |> 
+  group_by(name_states, days, variant_reduced) |> 
+  summarise(I = sum(I, na.rm = T))
+
 #run for everything -Other
-rt_fun <- function(df){
+rt_fun <- function(df, wallinga_teunis = FALSE){
   suppressPackageStartupMessages(require(EpiEstim))
   
   #1st day with infections of variant to start the R estimate otherwise R estimate artificially high
@@ -30,83 +41,98 @@ rt_fun <- function(df){
   t_start<-seq(2, nrow(df2)-15) 
   t_end<- t_start + 15
   
-  # configuration of input data for R estimate
-  # essentially we are estimating the serial intervals of SARS-CoV-2 (Omicron variant specific)
-  # by drawing from two ( truncated normal ) distributions 
-  # for the mean and standard deviation of the serial interval
-  config <- make_config(list(mean_si = 3.5, 
-                             std_mean_si = 1, 
-                             min_mean_si = 1, 
-                             max_mean_si = 6, # estimates for SARS-CoV-2 serial interval
-                             std_si = 1, 
-                             std_std_si = 0.5, 
-                             min_std_si = 0.5, 
-                             max_std_si = 1.5,
-                             n1= 80, 
-                             n2=20, 
-                             t_start=t_start, 
-                             t_end=t_end)
-  )
-  
   # main R estimate function:
   # will search for column named I which was created in the ci_fun but explicitly named here
-  mean_Rt <- estimate_R(df2$I, 
-                        method="uncertain_si",
-                        config = config)
-  
-  #adds back in days that were filtered out to match the days in the main dataframe
-  mean_Rt$R$t_start <- mean_Rt$R$t_start + non0 
-  mean_Rt$R$t_end <- mean_Rt$R$t_end + non0
-  
-  # #binds them into a dataframe
-  rt_df<-cbind.data.frame(day = mean_Rt$R$t_start,
-                          Rt = mean_Rt$R$`Mean(R)`,
-                          lower = mean_Rt$R$`Quantile.0.05(R)`,
-                          upper = mean_Rt$R$`Quantile.0.95(R)`)
+  if(wallinga_teunis){
+    config<-list(t_start = t_start, 
+                 t_end = t_end, 
+                 mean_si = 3.5, 
+                 std_si = 1,
+                 n_sim = 10)
+    
+    mean_Rt<-wallinga_teunis(incid = df2$I, 
+                             method = "parametric_si",
+                             config = config)
+    
+    #adds back in days that were filtered out to match the days in the main dataframe
+    mean_Rt$R$t_start <- mean_Rt$R$t_start + non0 
+    mean_Rt$R$t_end <- mean_Rt$R$t_end + non0
+    
+    # #binds them into a dataframe
+    rt_df<-cbind.data.frame(day = mean_Rt$R$t_start,
+                            Rt = mean_Rt$R$`Mean(R)`,
+                            lower = mean_Rt$R$`Quantile.0.025(R)`,
+                            upper = mean_Rt$R$`Quantile.0.975(R)`)
+    
+  }else{
+    # configuration of input data for R estimate
+    # essentially we are estimating the serial intervals of SARS-CoV-2 (Omicron variant specific)
+    # by drawing from two ( truncated normal ) distributions 
+    # for the mean and standard deviation of the serial interval
+    config <- list(mean_si = 3.5, 
+                               std_mean_si = 1, 
+                               min_mean_si = 1, 
+                               max_mean_si = 6, # estimates for SARS-CoV-2 serial interval
+                               std_si = 1, 
+                               std_std_si = 0.5, 
+                               min_std_si = 0.5, 
+                               max_std_si = 1.5,
+                               n1= 80, 
+                               n2=20, 
+                               t_start=t_start, 
+                               t_end=t_end)
+    
+    mean_Rt <- estimate_R(df2$I, 
+                          method="uncertain_si",
+                          config = config) 
+    
+    #adds back in days that were filtered out to match the days in the main dataframe
+    mean_Rt$R$t_start <- mean_Rt$R$t_start + non0 
+    mean_Rt$R$t_end <- mean_Rt$R$t_end + non0
+    
+    # #binds them into a dataframe
+    rt_df<-cbind.data.frame(day = mean_Rt$R$t_start,
+                            Rt = mean_Rt$R$`Mean(R)`,
+                            lower = mean_Rt$R$`Quantile.0.05(R)`,
+                            upper = mean_Rt$R$`Quantile.0.95(R)`)
+  }
   
   #merges the Rt value with the other variant data and renames Rt to have variant suffix
   merge <- df %>%
-    # mutate(date = as.Date(date)) |> 
     arrange(days) %>% #keep in week so that the day variable lines up with the first week
-    mutate(day = 1:nrow(df)) %>% #used to merge with the estimate_R variable output for the day
-    left_join(rt_df, by = c("day")) |> 
-    dplyr::mutate(date_start = seq.Date(from = min(days) + non0, 
-                                        length.out = nrow(df),
-                                        by = "days"),
-                  date_end = seq.Date(from = min(days) + non0 + 15, 
-                                      length.out = nrow(df),
-                                      by = "days")) |> 
-    select(days, date_start, date_end, name_states, variant, I, Rt, lower, upper)
-  #renames the smooth_spline output to have variant prefix
-  #rename_with(.fn = ~paste0(name,"_",.), .cols = c("Rt", "rtlowci", "rtupci")) 
+    rowid_to_column(var = "day") %>% #used to merge with the estimate_R variable output for the day
+    left_join(rt_df, by = c("day"))
   
   return(merge)
   
 }
 
 ## rt_fun tryCatch
-rt_safe<-function(x){
-  result <- tryCatch(rt_fun(df = x), error = function(err) x)
+rt_safe<-function(x, walling_teunis = FALSE){
+  result <- tryCatch(rt_fun(df = x, wallinga_teunis = walling_teunis), error = function(err) x)
   return(result)
 }
 
 ## Creating estimates for Rt
 ## Try do it in parallel
-rt_list<-c()
+rt_list<-rt_walling_teunis<-c()
 
 ## Estimates to use
-estimates_df<-infections_variants_daily
+estimates_df<-infections_variants_daily_reduced
 
 ## Vectors to for loops
-variants<-unique(estimates_df$variant)
+variants<-unique(estimates_df$variant_reduced)
+
+variants_reduced<-unique(estimates_df$variant_reduced)
 
 states<-unique(estimates_df$name_states)
 
-for (i in variants) {
+## Cori et al. Method
+for (i in variants_reduced) {
   for (j in states) {
     
     tmp <- estimates_df |> 
-      filter(variant == i, 
+      filter(variant_reduced == i, 
              name_states == j)
     
     if(nrow(tmp) == 0) next
@@ -123,33 +149,34 @@ for (i in variants) {
   cat("Finished variant: ", i, "over all states \n")
 }
 
-test<-lapply(test, setDF)
+rt_estimates<-bind_rows(rt_list)
 
-test2<-rbindlist(test, fill = TRUE, idcol = T)
+vroom_write(x = rt_estimates, 
+            file = "Output/Tables/rt_estimates_cori_method.csv.xz")
 
-
-flattenlist <- function(x){  
-  morelists <- sapply(x, function(xprime) class(xprime)[1]=="list")
-  out <- c(x[!morelists], unlist(x[morelists], recursive=FALSE))
-  if(sum(morelists)){ 
-    Recall(out)
-  }else{
-    return(out)
+## Walling-Teunis et al. Method
+for (i in variants_reduced) {
+  for (j in states) {
+    
+    tmp <- estimates_df |> 
+      filter(variant_reduced == i, 
+             name_states == j)
+    
+    if(nrow(tmp) == 0) next
+    
+    ## Try to handle when any Rt fails and continue it 
+    rt_walling_teunis[[i]][[j]]<-rt_safe(x = tmp, walling_teunis = TRUE)
+    rm(tmp)
+    gc()
+    cat("Finished state: ", j, "\n")
   }
+  rt_walling_teunis[[i]]<-bind_rows(rt_walling_teunis[[i]])
+  
+  ## Prompting messages, to monitor progress
+  cat("Finished variant: ", i, "over all states \n")
 }
 
-test<-bind_rows(rt_list)
+rt_estimates_walling_teunis<-bind_rows(rt_walling_teunis)
 
-
-test |> 
-  filter(name_states == "Connecticut") |> 
-  ggplot(aes(x = days, y = Rt, ymin = upper, ymax = lower, col = variant, fill = variant))+
-  geom_line()+
-  geom_ribbon(alpha = .5)+
-  theme_minimal()
-
-
-
-
-
-
+vroom_write(x = rt_walling_teunis, 
+            file = "Output/Tables/rt_estimates_walling_teunis_method.csv.xz")

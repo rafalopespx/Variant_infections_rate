@@ -8,7 +8,6 @@ lapply(packs,require, character.only = TRUE)
 
 ## Loading functions
 source("Scripts/Functions/functions.R")
-# source("Scripts/estimate_rt_ro_fun.R")
 
 ## Reading the database
 variants_count<-vroom("Data/variant_counts_us.csv.xz")
