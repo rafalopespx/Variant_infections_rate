@@ -15,10 +15,10 @@ infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv
 infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
 infections_variants_daily<-infections_variants_daily |> 
-  mutate(variant_reduced = case_when(variant == "Omicron BA.2.75*" ~ "Omicron BA.2*", 
+  mutate(variant_reduced = case_when(#variant == "Omicron BA.2.75*" ~ "Omicron BA.2*", 
                                      variant %in% c("Omicron BQ.1*", "Omicron BJ.1*") ~ "Omicron BA.5*",
                                      variant %in% c("XBB.1*" ,"XBB.1.5*") ~ "XBB*", 
-                                     variant == "Recombinant" ~ "Other", 
+                                     #variant == "Recombinant" ~ "Other", 
                                      TRUE ~ variant))
 
 infections_variants_daily_reduced<-infections_variants_daily |> 
@@ -152,7 +152,7 @@ for (i in variants_reduced) {
 rt_estimates<-bind_rows(rt_list)
 
 vroom_write(x = rt_estimates, 
-            file = "Output/Tables/rt_estimates_cori_method.csv.xz")
+            file = "Output/Tables/rt_estimates_cori_method.tsv.xz")
 
 ## Walling-Teunis et al. Method
 for (i in variants_reduced) {

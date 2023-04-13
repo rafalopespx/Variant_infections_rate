@@ -68,7 +68,27 @@ mean_rt<-function(x, first_something_days){
 
 ## States names
 states_division<-vroom("Data/states_abbrev_region_division.csv") |> 
-  rename(name_states = State)
+  rename(name_states = State) |> 
+  mutate(HHS_region = case_when(name_states %in% c("Connecticut", "Maine", "Massachusetts", "New Hampshire", 
+                                                   "Rhode Island", "Vermont") ~ "Region1",
+                                name_states %in% c("New Jersey", "New York") ~ "Region2",
+                                name_states %in% c("Delaware", "District of Columbia", "Maryland", 
+                                                   "Pennsylvania", "Virginia", "West Virginia") ~ "Region3",
+                                name_states %in% c("Alabama", "Florida", "Georgia", "Kentucky", 
+                                                   "Mississippi", "North Carolina", "South Carolina", 
+                                                   "Tennessee") ~ "Region4",
+                                name_states %in% c("Illinois", "Indiana", "Michigan", "Minnesota", 
+                                                   "Ohio", "Wisconsin") ~ "Region5",
+                                name_states %in% c("Arkansas", "Louisiana", "New Mexico", "Oklahoma", 
+                                                   "Texas") ~ "Region6",
+                                name_states %in% c("Iowa", "Kansas", "Missouri", "Nebraska") ~ "Region7",
+                                name_states %in% c("Colorado", "Montana", "North Dakota", "South Dakota", 
+                                                   "Utah", "Wyoming") ~ "Region8",
+                                name_states %in% c("Arizona", "California", "Hawaii", "Nevada") ~ "Region9",
+                                name_states %in% c("Alaska", "Idaho", "Oregon", "Washington") ~ "Region10")
+         ) |> 
+  mutate(HHS_region= factor(HHS_region, levels = c("Region1", "Region2", "Region3", "Region4", "Region5", 
+                                                    "Region6", "Region7", "Region8", "Region9", "Region10")))
 
 mean_rt_30<-lapply(test_split, mean_rt, 30) |> 
   bind_rows() |> 
@@ -88,30 +108,32 @@ mean_rt_120<-lapply(test_split, mean_rt, 120) |>
 
 ## Plotting
 plt_mean_rt_30<-mean_rt_30 |> 
-  filter(!is.na(Division)) |> 
-  ggplot(aes(x = Division, 
-             y = mean_rt, 
+  filter(!is.na(HHS_region)) |> 
+  ggplot(aes(y = name_states, 
+             x = mean_rt, 
+             xmin = mean_lower, xmax = mean_upper,
              col = variant_reduced, fill = variant_reduced))+
-  geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
-  geom_violin(position = position_dodge(width = .9),
-              scale = "width",
-              trim = FALSE,
-              alpha = .5) +
-  geom_point(position = position_jitterdodge(jitter.width = .1))+
+  geom_vline(xintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
+  # geom_violin(position = position_dodge(width = .9),
+  #             scale = "width",
+  #             trim = FALSE,
+  #             alpha = .5) +
+  geom_pointrange(position = position_jitterdodge(jitter.width = .1))+
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90, size = 9))+
-  labs(x = "Division", 
-       y = "Mean Reproduction Number \n Rt(t)", 
+  labs(y = "State", 
+       x = "Mean Reproduction Number \n Rt(t)", 
        subtitle = "Mean over 30 first days")+
+  facet_wrap(variant_reduced~., ncol = 1, strip.position = "right")+
   scale_fill_brewer(aesthetics = c("color", "fill"), 
                     palette = "Spectral", 
                     name = "VOCs")
 plt_mean_rt_30
 
 plt_mean_rt_60<-mean_rt_60 |> 
-  filter(!is.na(Division)) |> 
-  ggplot(aes(x = Division, 
+  filter(!is.na(HHS_region)) |> 
+  ggplot(aes(x = HHS_region, 
              y = mean_rt, 
              col = variant_reduced, fill = variant_reduced))+
   geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
@@ -123,7 +145,7 @@ plt_mean_rt_60<-mean_rt_60 |>
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90, size = 9))+
-  labs(x = "Division", 
+  labs(x = "HHS_region", 
        y = "Mean Reproduction Number \n Rt(t)", 
        subtitle = "Mean over 60 first days")+
   scale_fill_brewer(aesthetics = c("color", "fill"), 
@@ -132,8 +154,8 @@ plt_mean_rt_60<-mean_rt_60 |>
 plt_mean_rt_60
 
 plt_mean_rt_90<-mean_rt_90 |> 
-  filter(!is.na(Division)) |> 
-  ggplot(aes(x = Division, 
+  filter(!is.na(HHS_region)) |> 
+  ggplot(aes(x = HHS_region, 
              y = mean_rt, 
              col = variant_reduced, fill = variant_reduced))+
   geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
@@ -145,7 +167,7 @@ plt_mean_rt_90<-mean_rt_90 |>
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90, size = 9))+
-  labs(x = "Division", 
+  labs(x = "HHS_region", 
        y = "Mean Reproduction Number \n Rt(t)", 
        subtitle = "Mean over 90 first days")+
   scale_fill_brewer(aesthetics = c("color", "fill"), 
@@ -154,8 +176,8 @@ plt_mean_rt_90<-mean_rt_90 |>
 plt_mean_rt_90
 
 plt_mean_rt_120<-mean_rt_120 |> 
-  filter(!is.na(Division)) |> 
-  ggplot(aes(x = Division, 
+  filter(!is.na(HHS_region)) |> 
+  ggplot(aes(x = HHS_region, 
              y = mean_rt, 
              col = variant_reduced, fill = variant_reduced))+
   geom_hline(yintercept = 1,
@@ -168,7 +190,7 @@ plt_mean_rt_120<-mean_rt_120 |>
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90, size = 9))+
-  labs(x = "Division", 
+  labs(x = "HHS_region", 
        y = "Mean Reproduction Number \n Rt(t)", 
        subtitle = "Mean over 120 first days")+
   scale_fill_brewer(aesthetics = c("color", "fill"), 
@@ -177,29 +199,7 @@ plt_mean_rt_120<-mean_rt_120 |>
 plt_mean_rt_120
 
 
-plt_mean_rt_30<-mean_rt_30 |> 
-  filter(!is.na(Division)) |> 
-  ggplot(aes(x = Division, 
-             y = mean_rt, 
-             col = variant_reduced, fill = variant_reduced))+
-  geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
-  geom_violin(position = position_dodge(width = 0.9), 
-              scale = "width", 
-              trim = FALSE, 
-              alpha = .5) +
-  geom_point(position = position_jitterdodge(jitter.width  = .1))+
-  theme_minimal()+
-  theme(legend.position = "bottom", 
-        axis.text.x = element_text(angle = 90, size = 9))+
-  labs(x = "Division", 
-       y = "Mean Reproduction Number \n Rt(t)", 
-       subtitle = "Mean over 30 first days")+
-  scale_fill_brewer(aesthetics = c("color", "fill"), 
-                    palette = "Spectral", 
-                    name = "VOCs")
-plt_mean_rt_30
-
-states_division<-vroom("Data/states_abbrev_region_division.csv") |> 
+states_HHS_region<-vroom("Data/states_abbrev_region_division.csv") |> 
   rename(name_states = State)
 
 mean_rt_df<-rt_estimates |> 

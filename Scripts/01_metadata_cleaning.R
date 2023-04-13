@@ -10,7 +10,7 @@ lapply(packs, require, character.only = TRUE)
 source("Scripts/Functions/functions.R")
 
 ## Loading the metadata and states
-metadata<-vroom("Data/metadata_2023-03-07/metadata.tsv")
+metadata<-vroom("Data/metadata/metadata_2023-04-09_23-54.tsv.gz")
 
 ## States abbreviation
 states<-vroom("Data/state_abbreviation.tsv")
