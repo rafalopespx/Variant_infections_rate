@@ -3,7 +3,7 @@ rm(list = ls())
 gc()
 
 ## Loading Libraries
-packs = c("tidyverse", "vroom", "jsonlite", "httr", "geofacet")
+packs = c("tidyverse", "vroom", "jsonlite", "httr", "geofacet", "EpiEstim")
 lapply(packs,require, character.only = TRUE)
 
 ## Loading functions

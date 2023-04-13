@@ -75,7 +75,9 @@ infections_estimates<-function(data, infections.col, week.col, daily = FALSE){
         select_if(function(col) max(col) != 0) |>
         #round infections to whole individuals 
         dplyr::mutate(across(ends_with("infections"), ~round(.x, 0)))
+      
     }else{
+      
       data <- data |> 
         # arrange by week for creating the days
         dplyr::arrange(data[[week.col]]) |> 
@@ -91,6 +93,7 @@ infections_estimates<-function(data, infections.col, week.col, daily = FALSE){
         select_if(function(col) max(col) != 0) |>
         #round infections to whole individuals 
         dplyr::mutate(across(ends_with("infections"), ~round(.x, 0)))
+      
     }
     
     ## Infections data.frame
