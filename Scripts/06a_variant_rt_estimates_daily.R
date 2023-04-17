@@ -61,17 +61,17 @@ rt_fun <- function(df, wallinga_teunis = FALSE){
     # by drawing from two ( truncated normal ) distributions 
     # for the mean and standard deviation of the serial interval
     config <- list(mean_si = 3.5, 
-                               std_mean_si = 1, 
-                               min_mean_si = 1, 
-                               max_mean_si = 6, # estimates for SARS-CoV-2 serial interval
-                               std_si = 1, 
-                               std_std_si = 0.5, 
-                               min_std_si = 0.5, 
-                               max_std_si = 1.5,
-                               n1= 80, 
-                               n2=20, 
-                               t_start=t_start, 
-                               t_end=t_end)
+                   std_mean_si = 1, 
+                   min_mean_si = 1, 
+                   max_mean_si = 6, # estimates for SARS-CoV-2 serial interval
+                   std_si = 1, 
+                   std_std_si = 0.5, 
+                   min_std_si = 0.5, 
+                   max_std_si = 1.5,
+                   n1= 80, 
+                   n2=20, 
+                   t_start=t_start, 
+                   t_end=t_end)
     
     mean_Rt <- estimate_R(df2$I, 
                           method="uncertain_si",
@@ -143,31 +143,31 @@ for (i in variants) {
 rt_estimates<-bind_rows(rt_list)
 
 vroom_write(x = rt_estimates, 
-            file = "Output/Tables/rt_estimates_cori_method.tsv.xz")
+            file = "Output/Tables/rt_estimates_cori_method_daily.tsv.xz")
 
-## Walling-Teunis et al. Method
-for (i in variants_reduced) {
-  for (j in states) {
-    
-    tmp <- estimates_df |> 
-      filter(variant_reduced == i, 
-             name_states == j)
-    
-    if(nrow(tmp) == 0) next
-    
-    ## Try to handle when any Rt fails and continue it 
-    rt_walling_teunis[[i]][[j]]<-rt_safe(x = tmp, walling_teunis = TRUE)
-    rm(tmp)
-    gc()
-    cat("Finished state: ", j, "\n")
-  }
-  rt_walling_teunis[[i]]<-bind_rows(rt_walling_teunis[[i]])
-  
-  ## Prompting messages, to monitor progress
-  cat("Finished variant: ", i, "over all states \n")
-}
-
-rt_estimates_walling_teunis<-bind_rows(rt_walling_teunis)
-
-vroom_write(x = rt_walling_teunis, 
-            file = "Output/Tables/rt_estimates_walling_teunis_method.csv.xz")
+# ## Walling-Teunis et al. Method
+# for (i in variants_reduced) {
+#   for (j in states) {
+#     
+#     tmp <- estimates_df |> 
+#       filter(variant_reduced == i, 
+#              name_states == j)
+#     
+#     if(nrow(tmp) == 0) next
+#     
+#     ## Try to handle when any Rt fails and continue it 
+#     rt_walling_teunis[[i]][[j]]<-rt_safe(x = tmp, walling_teunis = TRUE)
+#     rm(tmp)
+#     gc()
+#     cat("Finished state: ", j, "\n")
+#   }
+#   rt_walling_teunis[[i]]<-bind_rows(rt_walling_teunis[[i]])
+#   
+#   ## Prompting messages, to monitor progress
+#   cat("Finished variant: ", i, "over all states \n")
+# }
+# 
+# rt_estimates_walling_teunis<-bind_rows(rt_walling_teunis)
+# 
+# vroom_write(x = rt_walling_teunis, 
+#             file = "Output/Tables/rt_estimates_walling_teunis_method.csv.xz")

@@ -43,6 +43,7 @@ plot_rt<-test_reduce |>
 plot_rt
 
 test_split<-test_reduce %>% 
+  rename(variant_reduced = variant) %>%
   split(list(.$name_states, .$variant_reduced))
 
 mean_rt<-function(x, first_something_days){
@@ -208,7 +209,7 @@ mean_rt_df<-rt_estimates |>
             mean_lower = mean(lower, na.rm = T), 
             mean_upper = mean(upper, na.rm = T)) |> 
   filter(!is.nan(mean_rt) | !is.nan(mean_lower) | !is.nan(mean_upper)) |> 
-  filter(name_states == "Connecticut") |>
+  # filter(name_states == "Connecticut") |>
   ggplot()+
   geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
   geom_line(aes(x = week, y = mean_rt, 
@@ -224,7 +225,7 @@ mean_rt_df<-rt_estimates |>
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+
-  # facet_geo(name_states~.)+
+  facet_geo(name_states~.)+
   # facet_wrap(variant_reduced~.)+
   scale_x_date(date_breaks = "4 months", 
                date_labels = "%b %y")+
