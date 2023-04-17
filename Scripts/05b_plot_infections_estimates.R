@@ -14,22 +14,16 @@ infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv
 
 infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
-infections_variants_daily<-infections_variants_daily |> 
-  mutate(variant_reduced = case_when(variant == "Omicron BA.2.75*" ~ "Omicron BA.2*", 
-                                     variant %in% c("Omicron BQ.1*", "Omicron BJ.1*") ~ "Omicron BA.5*",
-                                     variant %in% c("XBB.1*" ,"XBB.1.5*") ~ "XBB*", 
-                                     variant == "Recombinant" ~ "Other", 
-                                     TRUE ~ variant))
-
 infections_variants_daily_reduced<-infections_variants_daily |> 
-  group_by(name_states, days, variant_reduced) |> 
+  group_by(name_states, days, variant) |> 
   summarise(I = sum(I, na.rm = T))
 
 ## Plot
 plot_infections<-infections_variants_daily_reduced |> 
-  filter(variant_reduced != "Other") |>
+  filter(variant != "Other") |>
+  mutate(variant = droplevels(factor(variant))) |> 
   ggplot(aes(x = days, y = I, 
-             col = variant_reduced, fill = variant_reduced))+
+             col = variant, fill = variant))+
   geom_line()+
   theme_minimal()+
   theme(legend.position = "bottom", 
@@ -44,11 +38,19 @@ plot_infections<-infections_variants_daily_reduced |>
                     name = "VOCs")
 plot_infections
 
+## Saving infections plot
+ggsave(filename = "Output/Plots/plt_infections_daily_states.png", 
+       plot = plot_infections, 
+       width = 11,
+       height = 9, 
+       dpi = 100)
+
 plot_ct<-infections_variants_daily_reduced |> 
-  filter(variant_reduced != "Other", 
+  filter(variant != "Other", 
          name_states == "Connecticut") |>
+  mutate(variant = droplevels(factor(variant))) |> 
   ggplot(aes(x = days, y = I, 
-             col = variant_reduced, fill = variant_reduced))+
+             col = variant, fill = variant))+
   geom_line()+
   theme_minimal()+
   theme(legend.position = "bottom", 
@@ -63,3 +65,10 @@ plot_ct<-infections_variants_daily_reduced |>
                     palette = "Spectral", 
                     name = "VOCs")
 plot_ct
+
+## Saving CT plot as individual example
+ggsave(filename = "Output/Plots/plt_infections_daily_CT.png", 
+       plot = plot_ct, 
+       width = 11, 
+       height = 9, 
+       dpi = 100)

@@ -25,6 +25,8 @@ metadata<-metadata |>
                               TRUE ~ division)) |> 
   ## Filtering out any state name that is not matching 49 contiguous states plus Alaska and Hawaii
   filter(division %in% states$name_state)
+  
+vroom_write(x = metadata, file = "Data//metadata_us_raw.csv.xz")
 
 ## Formatting metadata in a more pratical form
 metadata <- metadata |> 
@@ -32,31 +34,54 @@ metadata <- metadata |>
   mutate(copy_date = as.numeric(date)) |> 
   ## Choosen lineages to be analyzed
   mutate(voc_cdc = case_when(grepl(x = pango_lineage, 
-                                   pattern = 'BA.1', 
+                                   pattern = '^(?=.*B.1.1.7)|(?=.*^Q)' , 
+                                   perl = TRUE) ~ 'Alpha*',
+                             grepl(x = pango_lineage, 
+                                   pattern = '^(?=.*B.1.351)', 
+                                   perl = TRUE) ~ 'Beta*',
+                             grepl(x = pango_lineage, 
+                                   pattern = '^(?=.*^P.1)', 
+                                   perl = TRUE) ~ 'Gamma*',
+                             grepl(x = pango_lineage, 
+                                   pattern = '^(?=.*B.1.617.2)', 
+                                   perl = TRUE) ~ 'Delta*',
+                             grepl(x = pango_lineage, 
+                                   pattern = '^(?=.*BA.1)|(?=.*B.1.1.529)', 
                                    perl = TRUE) ~ 'Omicron BA.1*',
                              grepl(x = pango_lineage, 
-                                   pattern = 'BA.2', 
+                                   pattern = '^(?=.*BA.2.75)', 
+                                   perl = TRUE) ~ 'Omicron BA.2.75*',
+                             grepl(x = pango_lineage, 
+                                   pattern = '^(?=.*BA.2)(?!.*BA.2.75)', 
                                    perl = TRUE) ~ 'Omicron BA.2*',
                              grepl(x = pango_lineage, 
-                                   pattern = 'BA.3', 
+                                   pattern = '^(?=.*BA.3)', 
                                    perl = TRUE) ~ 'Omicron BA.3*',
                              grepl(x = pango_lineage, 
-                                   pattern = 'BA.4', 
+                                   pattern = '^(?=.*BA.4)', 
                                    perl = TRUE) ~ 'Omicron BA.4*',
                              grepl(x = pango_lineage, 
-                                   pattern = 'BA.5', 
-                                   perl = TRUE) ~ 'Omicron BA.5*', 
+                                   pattern = '^(?=.*BA.5)', 
+                                   perl = TRUE) ~ 'Omicron BA.5*',
                              grepl(x = pango_lineage, 
-                                   pattern = 'XBB.1.5', 
+                                   pattern = '^(?=.*XBB.1.5)', 
                                    perl = TRUE) ~ 'XBB.1.5*',
                              grepl(x = pango_lineage, 
-                                   pattern = 'XBB.1', 
+                                   pattern = '^(?=.*XBB.1)(?!.*XBB.1.5)', 
                                    perl = TRUE) ~ 'XBB.1*',
+                             grepl(x = pango_lineage, 
+                                   pattern = '^(?=.*X)(?!.*XBB.1.5)(?!.*XBB.1)', 
+                                   perl = TRUE) ~ 'Recombinant',
                              TRUE ~ 'Other')) |> 
-         ## Completing dates to avoid missing dates
-         complete(date, nesting(voc_cdc), fill = list(copy_date = 0)) |> 
-         ## Putting date at the ending date of the epiweek
-         mutate(epiweek = end.of.epiweek(date))
+  ## Completing dates to avoid missing dates
+  complete(date, nesting(voc_cdc), fill = list(copy_date = 0)) |> 
+  ## Putting date at the ending date of the epiweek
+  mutate(epiweek = end.of.epiweek(date))
+
+## Talvez tentar inverte a forma de como realizar a classifição, 
+# fazer uma primeira estimativa de frequências nas pango lineages, e 
+# filtrar somente aquelas linhagens que tem mais de 0.1% de frequencia, 
+# com essas linhas realizar a estimativa de infecções
 
 ## Saving as compressed file
 vroom_write(x = metadata, 

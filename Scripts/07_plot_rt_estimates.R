@@ -2,10 +2,9 @@ test<-bind_rows(rt_list)
 test_reduce<-bind_rows(rt_list) 
 
 plot_rt_states<-test_reduce |> 
-  filter(variant_reduced != "Other") |>
   ggplot(aes(x = days, y = Rt,
              ymin = lower, ymax = upper, 
-             col = variant_reduced, fill = variant_reduced))+
+             col = variant, fill = variant))+
   geom_line()+
   geom_ribbon(alpha = .5)+
   theme_minimal()+
@@ -26,14 +25,14 @@ plot_rt<-test_reduce |>
   filter(name_states == "Connecticut") |> 
   ggplot(aes(x = days, y = Rt,
              ymin = lower, ymax = upper,
-             col = variant_reduced, fill = variant_reduced))+
+             col = variant, fill = variant))+
   geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
   geom_line()+
   geom_ribbon(alpha = .5)+
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+
-  # facet_wrap(variant_reduced~.)+
+  facet_wrap(variant~.)+
   scale_x_date(date_breaks = "4 months", 
                date_labels = "%b %y")+
   labs(x = "Date", 

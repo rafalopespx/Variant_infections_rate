@@ -10,9 +10,18 @@ lapply(packs,require, character.only = TRUE)
 source("Scripts/Functions/functions.R")
 
 ## Reading the database
-variants_count<-vroom("Data/variant_counts_us.csv.xz")
+variant_count<-vroom("Data/variant_counts_us.csv.xz")
 
-variants_count_wide<-variants_count |> 
+## Resetting to use just Omicron descedants subvariants
+variant_count<-variant_count |> 
+  filter(!voc_cdc %in% c("Alpha*", "Beta*", "Gamma*", "Delta*", "Other")) |> 
+  mutate(voc_cdc = droplevels(factor(voc_cdc))) |> 
+  mutate(voc_cdc = factor(voc_cdc,
+                          levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.2.75*", 
+                                     "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
+                                     "XBB.1*", "XBB.1.5*","Recombinant")))
+
+variants_count_wide<-variant_count |> 
   pivot_wider(id_cols = c("epiweek", "name_states"), 
               names_from = "voc_cdc", 
               values_from = c("freq", "n")) |> 
@@ -38,8 +47,7 @@ gc()
 estimates_variant<-variants_count_wide |>
   left_join(covidestim_state,
             by = c("epiweek","name_states")) |> #merges CovidEstim data with our data and keeps only 
-  filter(!is.na(infections))|>
-  select(-c(n_Other,freq_Other))
+  filter(!is.na(infections))
 
 infections_estimates<-function(data, infections.col, week.col, daily = FALSE){
   
@@ -139,5 +147,5 @@ infections_variants_daily<-estimates_variant |>
 vroom_write(x = infections_variants_daily, 
             file = "Data/infections_estimates_variants_daily.csv.xz")
 
-
+#
 

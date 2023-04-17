@@ -9,6 +9,15 @@ lapply(packs, require, character.only = TRUE)
 ## Loading the filtered data for the US
 variant_count<-vroom("Data/variant_counts_us.csv.xz")
 
+## Resetting to use just Omicron descedants subvariants
+variant_count<-variant_count |> 
+  filter(!voc_cdc %in% c("Alpha*", "Beta*", "Gamma*", "Delta*", "Other")) |> 
+  mutate(voc_cdc = droplevels(factor(voc_cdc))) |> 
+  mutate(voc_cdc = factor(voc_cdc,
+                          levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.2.75*", 
+                                     "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
+                                     "XBB.1*", "XBB.1.5*","Recombinant")))
+
 # Remove plot axis
 no_axis <- theme(axis.title=element_blank(),
                  axis.text=element_blank(),
@@ -16,9 +25,9 @@ no_axis <- theme(axis.title=element_blank(),
 
 ## Plotting US counts
 plt_us_variant_counts<-variant_count |>
-  filter(epiweek >= "2021-09-01", epiweek <= "2023-03-01") |> 
+  filter(epiweek >= "2022-01-01", epiweek <= "2023-03-01") |>
   ggplot(aes(x = epiweek, y = n, fill = voc_cdc))+
-  geom_col(width = 7)+
+  geom_col()+
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+
@@ -28,8 +37,8 @@ plt_us_variant_counts<-variant_count |>
   labs(y = "Genomes counts \n per week", 
        title = "Raw data for US",
        caption = "Source data from: GISAID")+
-  scale_fill_brewer(name = "VOCs", 
-                    palette = "Paired")
+  colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
+                                             palette = "Spectral")
 plt_us_variant_counts
 
 ## Saving the plot
@@ -41,9 +50,9 @@ ggsave(plot = plt_us_variant_counts,
 
 ## Plotting States counts
 plt_variant_counts<- variant_count |>
-  filter(epiweek >= "2021-09-01", epiweek <= "2023-03-01") |>  
+  filter(epiweek >= "2022-01-01", epiweek <= "2023-03-01") |>  
   ggplot(aes(x = epiweek, y = n, fill = voc_cdc))+
-  geom_col(width = 7)+
+  geom_col()+
   facet_geo(name_states~., grid = "us_state_grid1", scales = "free_y")+
   theme_minimal()+
   theme(legend.position = "bottom", 
@@ -79,7 +88,7 @@ plt_variant_freq<- variant_count |>
   scale_x_date(name = "Date of the end of week", 
                date_breaks = "2 months", 
                date_labels = "%b %Y")+
-  labs(y = "Genomes counts \n per week", 
+  labs(y = "Genomes frequency \n per week", 
        title = "Raw data from GISAID genomes", 
        subtitle = "per state", 
        caption = "Source data from: GISAID")+
@@ -94,27 +103,5 @@ ggsave(plot = plt_variant_freq,
        height = 9, 
        dpi = 100)
 
-
-## Exploratory analysis for CT
-# plot_ct<-variant_count |> 
-#   filter(name_states == "Connecticut", 
-#          epiweek >= "2021-09-01", 
-#          epiweek <= "2023-03-01")|>  
-#   ggplot(aes(x = epiweek, y = n, fill = voc_cdc))+
-#   geom_col(position = position_fill(),
-#            width = 7) +
-#   theme_minimal()+
-#   theme(legend.position = "bottom", 
-#         axis.text.x = element_text(angle = 90))+
-#   scale_x_date(name = "Date of the end of week", 
-#                date_breaks = "2 months", 
-#                date_labels = "%b %Y")+
-#   labs(y = "Genomes counts \n per week", 
-#        title = "Raw data from GISAID genomes", 
-#        subtitle = "Connecticut", 
-#        caption = "Source data from: GISAID")+
-#   colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
-#                                              palette = "Spectral")
-# plot_ct
 
 #
