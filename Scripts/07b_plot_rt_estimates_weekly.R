@@ -44,9 +44,9 @@ plot_rt_states<-rt_estimates |>
   facet_geo(name_states~.)
 plot_rt_states
 
-ggsave(filename = "Output/Plots/plt_rt_estimates_states.png", 
-       plot = plot_rt, 
-       width = 11,
+ggsave(filename = "Output/Plots/plt_rt_estimates_states_weekly.png", 
+       plot = plot_rt_states, 
+       width = 15,
        height = 9, 
        dpi = 100)
 
@@ -61,14 +61,14 @@ plot_rt_list<-lapply(states, function(x){
            title = x)+
     facet_wrap(variant~., ncol = 4)
   
-  ggsave(filename = paste0("Output/Plots/States_rt/plt_rt_estimates_", x, ".png"), 
-         width = 11, 
+  ggsave(filename = paste0("Output/Plots/States_rt/plt_rt_estimates_", x, "_weekly.png"), 
+         width = 15, 
          height = 9, 
          dpi = 100)
 })
 
 ## Split over states and variants
-rt_split<-test_reduce %>% 
+rt_split<-rt_estimates %>% 
   split(list(.$name_states, .$variant))
 
 ## Function to estimate the average Rts
@@ -148,12 +148,12 @@ plt_rt_avg<-function(x, avg_days){
     geom_point(position = position_jitterdodge(jitter.width  = .1))+
     theme_minimal()+
     theme(legend.position = "bottom", 
-          axis.text.x = element_text(angle = 90, size = 9))+
+          axis.text.x = element_text(angle = 0, size = 9))+
     labs(x = "HHS Region", 
          y = "Average Reproduction Number \n Rt", 
          subtitle = paste0("Average over ", avg_days," first days"))+
-    colorspace::scale_fill_discrete_sequential(name = "VOCs", 
-                                               palette = "Viridis", 
+    colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
+                                               palette = "Spectral", 
                                                aesthetics = c("color", "fill"))
 }
 
@@ -162,52 +162,78 @@ plt_mean_rt_30<-mean_rt_30 |>
   plt_rt_avg(avg_days = 30)
 plt_mean_rt_30
 
+ggsave(filename = "Output/Plots/average_rt/plt_avg_30_weekly.png", 
+       plot = plt_mean_rt_30, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
+
 plt_mean_rt_60<-mean_rt_60 |> 
   plt_rt_avg(avg_days = 60)
 plt_mean_rt_60
+
+ggsave(filename = "Output/Plots/average_rt/plt_avg_60_weekly.png", 
+       plot = plt_mean_rt_60, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
 
 plt_mean_rt_90<-mean_rt_90 |> 
   plt_rt_avg(avg_days = 90)
 plt_mean_rt_90
 
+ggsave(filename = "Output/Plots/average_rt/plt_avg_90_weekly.png", 
+       plot = plt_mean_rt_90, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
+
 plt_mean_rt_120<-mean_rt_120 |> 
   plt_rt_avg(avg_days = 120)
 plt_mean_rt_120
 
+ggsave(filename = "Output/Plots/average_rt/plt_avg_120_weekly.png", 
+       plot = plt_mean_rt_120, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
 
-states_HHS_region<-vroom("Data/states_abbrev_region_division.csv") |> 
-  rename(name_states = State)
-
-mean_rt_df<-rt_estimates |> 
-  mutate(week = end.of.epiweek(days)) |> 
-  group_by(week, name_states) |> 
-  summarise(mean_rt = mean(Rt, na.rm = T), 
-            mean_lower = mean(lower, na.rm = T), 
-            mean_upper = mean(upper, na.rm = T)) |> 
-  filter(!is.nan(mean_rt) | !is.nan(mean_lower) | !is.nan(mean_upper)) |> 
-  filter(name_states == "Connecticut") |>
-  ggplot()+
-  geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
-  geom_line(aes(x = week, y = mean_rt, 
-                color = "firebrick1"),
-            show.legend = F)+
-  geom_ribbon(aes(x = week, y = mean_rt, 
-                  ymin = mean_lower, 
-                  ymax = mean_upper, 
-                  color = "firebrick1", 
-                  fill = "firebrick1"),
-              alpha = .5, 
-              show.legend = F)+
-  theme_minimal()+
-  theme(legend.position = "bottom", 
-        axis.text.x = element_text(angle = 90))+
-  # facet_geo(name_states~.)+
-  # facet_wrap(variant_reduced~.)+
-  scale_x_date(date_breaks = "4 months", 
-               date_labels = "%b %y")+
-  labs(x = "Date", 
-       y = "Instantenous Reproduction Number \n Rt(t)")
-mean_rt_df
+# ## Rt estimates per state
+# states_HHS_region<-vroom("Data/states_abbrev_region_division.csv") |> 
+#   rename(name_states = State)
+# 
+# rt_states_avg<-rt_estimates |> 
+#   mutate(week = end.of.epiweek(days)) |> 
+#   group_by(week, name_states) |> 
+#   summarise(mean_rt = mean(Rt, na.rm = T), 
+#             mean_lower = mean(lower, na.rm = T), 
+#             mean_upper = mean(upper, na.rm = T))
+# 
+# 
+# rt_states_avg|> 
+#   filter(!is.nan(mean_rt) | !is.nan(mean_lower) | !is.nan(mean_upper)) |> 
+#   filter(name_states == "Texas") |>
+#   ggplot()+
+#   geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
+#   geom_line(aes(x = week, y = mean_rt, 
+#                 color = "firebrick1"),
+#             show.legend = F)+
+#   geom_ribbon(aes(x = week, y = mean_rt, 
+#                   ymin = mean_lower, 
+#                   ymax = mean_upper, 
+#                   color = "firebrick1", 
+#                   fill = "firebrick1"),
+#               alpha = .5, 
+#               show.legend = F)+
+#   theme_minimal()+
+#   theme(legend.position = "bottom", 
+#         axis.text.x = element_text(angle = 90))+
+#   # facet_geo(name_states~.)+
+#   # facet_wrap(variant_reduced~.)+
+#   scale_x_date(date_breaks = "4 months", 
+#                date_labels = "%b %y")+
+#   labs(x = "Date", 
+#        y = "Instantenous Reproduction Number \n Rt(t)")
 
 
 

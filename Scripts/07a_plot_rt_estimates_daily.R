@@ -20,6 +20,7 @@ plt_rt<-function(data, x.title, y.title, title = NULL){
     ggplot(aes(x = days, y = Rt, 
                ymin = lower, ymax = upper,
                color = variant, fill = variant))+
+    geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
     geom_line()+
     geom_ribbon(alpha = .15)+
     theme_minimal()+
@@ -44,9 +45,9 @@ plot_rt_states<-rt_estimates |>
   facet_geo(name_states~.)
 plot_rt_states
 
-ggsave(filename = "Output/Plots/plt_rt_estimates_states.png", 
-       plot = plot_rt, 
-       width = 11,
+ggsave(filename = "Output/Plots/plt_rt_estimates_states_daily.png", 
+       plot = plot_rt_states, 
+       width = 15,
        height = 9, 
        dpi = 100)
 
@@ -61,8 +62,8 @@ plot_rt_list<-lapply(states, function(x){
            title = x)+
     facet_wrap(variant~., ncol = 4)
   
-  ggsave(filename = paste0("Output/Plots/States_rt/plt_rt_estimates_", x, ".png"), 
-         width = 11, 
+  ggsave(filename = paste0("Output/Plots/States_rt/plt_rt_estimates_", x, "_daily.png"), 
+         width = 15, 
          height = 9, 
          dpi = 100)
 })
@@ -140,21 +141,34 @@ plt_rt_avg<-function(x, avg_days){
     ggplot(aes(x = HHS_region, 
                y = mean_rt, 
                col = variant, fill = variant))+
-    geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
-    geom_violin(position = position_dodge(width = 0.9), 
-                scale = "width", 
-                trim = FALSE, 
-                alpha = .5) +
-    geom_point(position = position_jitterdodge(jitter.width  = .1))+
+    geom_hline(yintercept = 1, 
+               show.legend = F, 
+               aes(col = "gray9"), alpha = .5)+
+    # geom_violin(position = position_dodge(width = 0.9), 
+    #             scale = "width", 
+    #             trim = FALSE, 
+    #             alpha = .5) +
+    # geom_point(position = position_jitterdodge(jitter.width  = .1))+
+    # geom_text(aes(label = `State Code`), 
+    #           position = position_dodge(width = 1.1), 
+    #           show.legend = FALSE, 
+    #           size = 3)+
+    geom_jitter(position = position_dodge(width = .9, preserve = "total"))+
+    stat_summary(fun = median, geom = "crossbar", 
+                 position = position_dodge(width = .9), 
+                 width = 1.1, 
+                 size = .25, 
+                 show.legend = FALSE)+
     theme_minimal()+
     theme(legend.position = "bottom", 
           axis.text.x = element_text(angle = 90, size = 9))+
     labs(x = "HHS Region", 
          y = "Average Reproduction Number \n Rt", 
          subtitle = paste0("Average over ", avg_days," first days"))+
-    colorspace::scale_fill_discrete_sequential(name = "VOCs", 
-                                               palette = "Viridis", 
-                                               aesthetics = c("color", "fill"))
+    colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
+                                               palette = "RdYlBu", 
+                                               aesthetics = c("color", "fill"))+
+    facet_wrap(variant~., nrow = 1)
 }
 
 ## Plotting
@@ -162,51 +176,79 @@ plt_mean_rt_30<-mean_rt_30 |>
   plt_rt_avg(avg_days = 30)
 plt_mean_rt_30
 
+ggsave(filename = "Output/Plots/average_rt/plt_avg_30_daily.png", 
+       plot = plt_mean_rt_30, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
+
 plt_mean_rt_60<-mean_rt_60 |> 
   plt_rt_avg(avg_days = 60)
 plt_mean_rt_60
+
+ggsave(filename = "Output/Plots/average_rt/plt_avg_60_daily.png", 
+       plot = plt_mean_rt_60, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
 
 plt_mean_rt_90<-mean_rt_90 |> 
   plt_rt_avg(avg_days = 90)
 plt_mean_rt_90
 
+ggsave(filename = "Output/Plots/average_rt/plt_avg_90_daily.png", 
+       plot = plt_mean_rt_90, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
+
 plt_mean_rt_120<-mean_rt_120 |> 
   plt_rt_avg(avg_days = 120)
 plt_mean_rt_120
 
-states_HHS_region<-vroom("Data/states_abbrev_region_division.csv") |> 
-  rename(name_states = State)
+ggsave(filename = "Output/Plots/average_rt/plt_avg_120_daily.png", 
+       plot = plt_mean_rt_120, 
+       width = 15,
+       height = 9, 
+       dpi = 100)
 
-mean_rt_df<-rt_estimates |> 
-  mutate(week = end.of.epiweek(days)) |> 
-  group_by(week, name_states) |> 
-  summarise(mean_rt = mean(Rt, na.rm = T), 
-            mean_lower = mean(lower, na.rm = T), 
-            mean_upper = mean(upper, na.rm = T)) |> 
-  filter(!is.nan(mean_rt) | !is.nan(mean_lower) | !is.nan(mean_upper)) |> 
-  filter(name_states == "Connecticut") |>
-  ggplot()+
-  geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
-  geom_line(aes(x = week, y = mean_rt, 
-                color = "firebrick1"),
-            show.legend = F)+
-  geom_ribbon(aes(x = week, y = mean_rt, 
-                  ymin = mean_lower, 
-                  ymax = mean_upper, 
-                  color = "firebrick1", 
-                  fill = "firebrick1"),
-              alpha = .5, 
-              show.legend = F)+
-  theme_minimal()+
-  theme(legend.position = "bottom", 
-        axis.text.x = element_text(angle = 90))+
-  # facet_geo(name_states~.)+
-  # facet_wrap(variant_reduced~.)+
-  scale_x_date(date_breaks = "4 months", 
-               date_labels = "%b %y")+
-  labs(x = "Date", 
-       y = "Instantenous Reproduction Number \n Rt(t)")
-mean_rt_df
+# ## Rt estimates per state
+# 
+# states_HHS_region<-vroom("Data/states_abbrev_region_division.csv") |> 
+#   rename(name_states = State)
+# 
+# rt_states_avg<-rt_estimates |> 
+#   mutate(week = end.of.epiweek(days)) |> 
+#   group_by(week, name_states) |> 
+#   summarise(mean_rt = mean(Rt, na.rm = T), 
+#             mean_lower = mean(lower, na.rm = T), 
+#             mean_upper = mean(upper, na.rm = T))
+# 
+# 
+# rt_states_avg|> 
+#   filter(!is.nan(mean_rt) | !is.nan(mean_lower) | !is.nan(mean_upper)) |> 
+#   filter(name_states == "Texas") |>
+#   ggplot()+
+#   geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
+#   geom_line(aes(x = week, y = mean_rt, 
+#                 color = "firebrick1"),
+#             show.legend = F)+
+#   geom_ribbon(aes(x = week, y = mean_rt, 
+#                   ymin = mean_lower, 
+#                   ymax = mean_upper, 
+#                   color = "firebrick1", 
+#                   fill = "firebrick1"),
+#               alpha = .5, 
+#               show.legend = F)+
+#   theme_minimal()+
+#   theme(legend.position = "bottom", 
+#         axis.text.x = element_text(angle = 90))+
+#   # facet_geo(name_states~.)+
+#   # facet_wrap(variant_reduced~.)+
+#   scale_x_date(date_breaks = "4 months", 
+#                date_labels = "%b %y")+
+#   labs(x = "Date", 
+#        y = "Instantenous Reproduction Number \n Rt(t)")
 
 
 
