@@ -31,7 +31,7 @@ variantestim_state<-rt_estimates |>
 comparison_df<-full_join(covidestim_state, variantestim_state)
 
 comparison_df |> 
-  # filter(name_states == "Connecticut") |> 
+  filter(name_states == "Connecticut") |>
   ggplot(aes(x = epiweek, y = mean_rt, 
              ymin = mean_lower, ymax = mean_upper, 
              col = id, fill = id))+
@@ -44,7 +44,7 @@ comparison_df |>
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+
-  facet_geo(name_states~.)+
+  # facet_geo(name_states~.)+
   # facet_wrap(variant_reduced~.)+
   scale_x_date(date_breaks = "2 months", 
                date_labels = "%b %y")+

@@ -117,6 +117,8 @@ states_division<-vroom("Data/states_abbrev_region_division.csv") |>
   mutate(HHS_region= factor(HHS_region, levels = c("Region1", "Region2", "Region3", "Region4", "Region5", 
                                                    "Region6", "Region7", "Region8", "Region9", "Region10")))
 
+vroom_write(x = states_division, file = "Data/state_abbreviation.tsv")
+
 ## Several averages over different amount of days
 
 mean_rt_30<-lapply(rt_split, mean_rt, 30) |> 
@@ -144,31 +146,32 @@ plt_rt_avg<-function(x, avg_days){
     geom_hline(yintercept = 1, 
                show.legend = F, 
                aes(col = "gray9"), alpha = .5)+
-    # geom_violin(position = position_dodge(width = 0.9), 
-    #             scale = "width", 
-    #             trim = FALSE, 
-    #             alpha = .5) +
-    # geom_point(position = position_jitterdodge(jitter.width  = .1))+
-    # geom_text(aes(label = `State Code`), 
-    #           position = position_dodge(width = 1.1), 
-    #           show.legend = FALSE, 
-    #           size = 3)+
-    geom_jitter(position = position_dodge(width = .9, preserve = "total"))+
+    geom_violin(position = position_dodge(width = 0.9),
+                scale = "width",
+                trim = FALSE,
+                alpha = .5) +
+    geom_point(position = position_jitterdodge(jitter.width  = .1))+
+    ggrepel::geom_text_repel(data = subset(x, mean_rt > 1.5 | mean_rt < 1),
+                             aes(label = `State Code`),
+                             min.segment.length = 0,
+              # position = position_jitterdodge(jitter.width = .1),
+              show.legend = FALSE)+
+    # geom_jitter(position = position_dodge(width = .9, preserve = "total"))+
     stat_summary(fun = median, geom = "crossbar", 
-                 position = position_dodge(width = .9), 
-                 width = 1.1, 
+                 position = position_dodge(width = .9),
+                 # width = 1, 
                  size = .25, 
                  show.legend = FALSE)+
     theme_minimal()+
     theme(legend.position = "bottom", 
-          axis.text.x = element_text(angle = 90, size = 9))+
+          axis.text.x = element_text(angle = 0, size = 9))+
     labs(x = "HHS Region", 
          y = "Average Reproduction Number \n Rt", 
-         subtitle = paste0("Average over ", avg_days," first days"))+
+         subtitle = paste0("Average over ", avg_days," first days"), 
+         caption = "Showing state code only for states with avg Rt > 1.5 or < 1.0")+
     colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
                                                palette = "RdYlBu", 
-                                               aesthetics = c("color", "fill"))+
-    facet_wrap(variant~., nrow = 1)
+                                               aesthetics = c("color", "fill"))
 }
 
 ## Plotting

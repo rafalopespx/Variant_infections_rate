@@ -1,52 +1,52 @@
-code_state 	name_state 	abbrev_state 
-01	Alabama 	AL
-02	Alaska 	AK
-04	Arizona 	AZ
-05	Arkansas 	AR
-06	California 	CA
-08	Colorado 	CO
-09	Connecticut 	CT
-10	Delaware 	DE
-11	District of Columbia 	DC
-12	Florida 	FL
-13	Georgia 	GA
-15	Hawaii 	HI
-16	Idaho 	ID
-17	Illinois 	IL
-18	Indiana 	IN
-19	Iowa 	IA
-20	Kansas 	KS
-21	Kentucky 	KY
-22	Louisiana 	LA
-23	Maine 	ME
-24	Maryland 	MD
-25	Massachusetts 	MA
-26	Michigan 	MI
-27	Minnesota 	MN
-28	Mississippi 	MS
-29	Missouri 	MO
-30	Montana 	MT
-31	Nebraska 	NE
-32	Nevada 	NV
-33	New Hampshire 	NH
-34	New Jersey 	NJ
-35	New Mexico 	NM
-36	New York 	NY
-37	North Carolina 	NC
-38	North Dakota 	ND
-39	Ohio 	OH
-40	Oklahoma 	OK
-41	Oregon 	OR
-42	Pennsylvania 	PA
-44	Rhode Island 	RI
-45	South Carolina 	SC
-46	South Dakota 	SD
-47	Tennessee 	TN
-48	Texas 	TX
-49	Utah 	UT
-50	Vermont 	VT
-51	Virginia 	VA
-53	Washington 	WA
-54	West Virginia 	WV
-55	Wisconsin 	WI
-56	Wyoming 	WY
+name_states	State Code	Region	Division	HHS_region
+Alaska	AK	West	Pacific	Region10
+Alabama	AL	South	East South Central	Region4
+Arkansas	AR	South	West South Central	Region6
+Arizona	AZ	West	Mountain	Region9
+California	CA	West	Pacific	Region9
+Colorado	CO	West	Mountain	Region8
+Connecticut	CT	Northeast	New England	Region1
+District of Columbia	DC	South	South Atlantic	Region3
+Delaware	DE	South	South Atlantic	Region3
+Florida	FL	South	South Atlantic	Region4
+Georgia	GA	South	South Atlantic	Region4
+Hawaii	HI	West	Pacific	Region9
+Iowa	IA	Midwest	West North Central	Region7
+Idaho	ID	West	Mountain	Region10
+Illinois	IL	Midwest	East North Central	Region5
+Indiana	IN	Midwest	East North Central	Region5
+Kansas	KS	Midwest	West North Central	Region7
+Kentucky	KY	South	East South Central	Region4
+Louisiana	LA	South	West South Central	Region6
+Massachusetts	MA	Northeast	New England	Region1
+Maryland	MD	South	South Atlantic	Region3
+Maine	ME	Northeast	New England	Region1
+Michigan	MI	Midwest	East North Central	Region5
+Minnesota	MN	Midwest	West North Central	Region5
+Missouri	MO	Midwest	West North Central	Region7
+Mississippi	MS	South	East South Central	Region4
+Montana	MT	West	Mountain	Region8
+North Carolina	NC	South	South Atlantic	Region4
+North Dakota	ND	Midwest	West North Central	Region8
+Nebraska	NE	Midwest	West North Central	Region7
+New Hampshire	NH	Northeast	New England	Region1
+New Jersey	NJ	Northeast	Middle Atlantic	Region2
+New Mexico	NM	West	Mountain	Region6
+Nevada	NV	West	Mountain	Region9
+New York	NY	Northeast	Middle Atlantic	Region2
+Ohio	OH	Midwest	East North Central	Region5
+Oklahoma	OK	South	West South Central	Region6
+Oregon	OR	West	Pacific	Region10
+Pennsylvania	PA	Northeast	Middle Atlantic	Region3
+Rhode Island	RI	Northeast	New England	Region1
+South Carolina	SC	South	South Atlantic	Region4
+South Dakota	SD	Midwest	West North Central	Region8
+Tennessee	TN	South	East South Central	Region4
+Texas	TX	South	West South Central	Region6
+Utah	UT	West	Mountain	Region8
+Virginia	VA	South	South Atlantic	Region3
+Vermont	VT	Northeast	New England	Region1
+Washington	WA	West	Pacific	Region10
+Wisconsin	WI	Midwest	East North Central	Region5
+West Virginia	WV	South	South Atlantic	Region3
+Wyoming	WY	West	Mountain	Region8

@@ -140,20 +140,32 @@ plt_rt_avg<-function(x, avg_days){
     ggplot(aes(x = HHS_region, 
                y = mean_rt, 
                col = variant, fill = variant))+
-    geom_hline(yintercept = 1,show.legend = F, aes(col = "gray9"), alpha = .5)+
-    geom_violin(position = position_dodge(width = 0.9), 
-                scale = "width", 
-                trim = FALSE, 
+    geom_hline(yintercept = 1, 
+               show.legend = F, 
+               aes(col = "gray9"), alpha = .5)+
+    geom_violin(position = position_dodge(width = 0.9),
+                scale = "width",
+                trim = FALSE,
                 alpha = .5) +
     geom_point(position = position_jitterdodge(jitter.width  = .1))+
+    # ggrepel::geom_text_repel(aes(label = `State Code`),
+    #           position = position_dodge(width = 1.1),
+    #           show.legend = FALSE,
+    #           size = 3)+
+    # geom_jitter(position = position_dodge(width = .9, preserve = "total"))+
+    stat_summary(fun = median, geom = "crossbar", 
+                 position = position_dodge(width = .9), 
+                 # width = 1, 
+                 size = .25, 
+                 show.legend = FALSE)+
     theme_minimal()+
     theme(legend.position = "bottom", 
-          axis.text.x = element_text(angle = 0, size = 9))+
+          axis.text.x = element_text(angle = 90, size = 9))+
     labs(x = "HHS Region", 
          y = "Average Reproduction Number \n Rt", 
          subtitle = paste0("Average over ", avg_days," first days"))+
     colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
-                                               palette = "Spectral", 
+                                               palette = "RdYlBu", 
                                                aesthetics = c("color", "fill"))
 }
 
