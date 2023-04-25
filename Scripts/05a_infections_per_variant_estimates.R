@@ -14,12 +14,12 @@ variant_count<-vroom("Data/variant_counts_us.csv.xz")
 
 ## Resetting to use just Omicron descedants subvariants
 variant_count<-variant_count |> 
-  filter(!voc_cdc %in% c("Alpha*", "Beta*", "Gamma*", "Delta*", "Other")) |> 
+  filter(!voc_cdc %in% c("Alpha*", "Beta*", "Gamma*", "Delta*")) |> 
   mutate(voc_cdc = droplevels(factor(voc_cdc))) |> 
   mutate(voc_cdc = factor(voc_cdc,
-                          levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.2.75*", 
-                                     "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
-                                     "XBB.1*", "XBB.1.5*","Recombinant")))
+                          levels = c("Omicron BA.1*", "Omicron BA.2*", 
+                                     "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*",
+                                     "Omicron XBB*","Recombinant", "Other")))
 
 variants_count_wide<-variant_count |> 
   pivot_wider(id_cols = c("epiweek", "name_states"), 
@@ -49,7 +49,7 @@ estimates_variant<-variants_count_wide |>
             by = c("epiweek","name_states")) |> #merges CovidEstim data with our data and keeps only 
   filter(!is.na(infections))
 
-infections_estimates<-function(data, infections.col, week.col, daily = FALSE){
+infections_estimates<-function(data, daily = FALSE){
   
   ## Creating states var to loop over it
   states<-unique(data$name_states)
@@ -62,16 +62,16 @@ infections_estimates<-function(data, infections.col, week.col, daily = FALSE){
     if(daily){
       data <- data |> 
         # arrange by week for creating the days
-        dplyr::arrange(data[[week.col]]) |> 
+        dplyr::arrange(epiweek) |> 
         # create variable for days
         dplyr::mutate(days = epiweek) |>
         # dividing by 7 to make it an average of the week
         dplyr::mutate(across(starts_with("infections"), ~.x/7)) |> 
         # Complete the dates
-        complete(days = seq.Date(min(data[[week.col]]), 
-                                 max(data[[week.col]]), 
+        complete(days = seq.Date(min(epiweek), 
+                                 max(epiweek), 
                                  by = "days")) |> 
-        fill(name_states, .direction = "down") |> 
+        fill(c(name_states, epiweek), .direction = "down") |> 
         dplyr::mutate(across(where(is.numeric), ~zoo::na.spline(.x))) |> 
         # cutting off the frequencies less than 0.02, and setting as 0
         dplyr::mutate(across(starts_with("freq"), ~ifelse(.x <= 0.02, 0, .x))) |>
@@ -88,7 +88,7 @@ infections_estimates<-function(data, infections.col, week.col, daily = FALSE){
       
       data <- data |> 
         # arrange by week for creating the days
-        dplyr::arrange(data[[week.col]]) |> 
+        dplyr::arrange(epiweek) |> 
         # create variable for days
         dplyr::mutate(days = epiweek) |>
         # cutting off the frequencies less than 0.02, and setting as 0
@@ -130,8 +130,7 @@ infections_estimates<-function(data, infections.col, week.col, daily = FALSE){
 
 ## Weekly
 infections_variants_weekly<-estimates_variant |> 
-  infections_estimates(week.col = "epiweek", 
-                       infections.col = "infections") |> 
+  infections_estimates() |> 
   bind_rows(.id = "name_states")
 
 vroom_write(x = infections_variants_weekly, 
@@ -139,9 +138,7 @@ vroom_write(x = infections_variants_weekly,
 
 ## Daily
 infections_variants_daily<-estimates_variant |> 
-  infections_estimates(week.col = "epiweek", 
-                       infections.col = "infections", 
-                       daily = TRUE) |> 
+  infections_estimates(daily = TRUE) |> 
   bind_rows(.id = "name_states")
 
 vroom_write(x = infections_variants_daily, 

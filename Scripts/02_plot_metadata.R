@@ -11,12 +11,12 @@ variant_count<-vroom("Data/variant_counts_us.csv.xz")
 
 ## Resetting to use just Omicron descedants subvariants
 variant_count<-variant_count |> 
-  filter(!voc_cdc %in% c("Alpha*", "Beta*", "Gamma*", "Delta*", "Other")) |> 
+  filter(!voc_cdc %in% c("Alpha*", "Beta*", "Gamma*", "Delta*")) |> 
   mutate(voc_cdc = droplevels(factor(voc_cdc))) |> 
   mutate(voc_cdc = factor(voc_cdc,
-                          levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.2.75*", 
+                          levels = c("Omicron BA.1*", "Omicron BA.2*", 
                                      "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
-                                     "XBB.1*", "XBB.1.5*","Recombinant")))
+                                     "Omicron XBB*","Recombinant", "Other")))
 
 # Remove plot axis
 no_axis <- theme(axis.title=element_blank(),
@@ -32,7 +32,7 @@ plt_us_variant_counts<-variant_count |>
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+
   scale_x_date(name = "Date of the end of week", 
-               date_breaks = "2 months", 
+               date_breaks = "1 month", 
                date_labels = "%b %Y")+
   labs(y = "Genomes counts \n per week", 
        title = "Raw data for US",

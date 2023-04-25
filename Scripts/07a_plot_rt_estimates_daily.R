@@ -10,7 +10,7 @@ lapply(packs,require, character.only = TRUE)
 source("Scripts/Functions/functions.R")
 
 ## Loading the estimates
-rt_estimates<-vroom("Output/Tables/rt_estimates_cori_method.tsv.xz")
+rt_estimates<-vroom("Output/Tables/rt_estimates_cori_method_daily.tsv.xz")
 
 ## Making function to plot
 plt_rt<-function(data, x.title, y.title, title = NULL){
@@ -55,17 +55,20 @@ ggsave(filename = "Output/Plots/plt_rt_estimates_states_daily.png",
 states<-unique(rt_estimates$name_states)
 
 plot_rt_list<-lapply(states, function(x){
-  rt_estimates |> 
+  plt<-rt_estimates |> 
     filter(name_states == x) |>
     plt_rt(x.title = "Date", 
            y.title = "Instantenous Reproduction Number \n Rt(t)", 
            title = x)+
     facet_wrap(variant~., ncol = 4)
   
-  ggsave(filename = paste0("Output/Plots/States_rt/plt_rt_estimates_", x, "_daily.png"), 
-         width = 15, 
-         height = 9, 
+  ggsave(filename = paste0("Output/Plots/States_rt/plt_rt_estimates_", x, "_daily.png"),
+         plot = plt,
+         width = 15,
+         height = 9,
          dpi = 100)
+  
+  return(plt)
 })
 
 ## Split over states and variants

@@ -14,6 +14,7 @@ end.of.epiweek <- function(x, end = 6) {
   num.x <- as.numeric(x)
   return(x - (num.x %% 7) + offset + ifelse(num.x %% 7 > offset, 7, 0))
 }
+
 plot.multinom<- function(data, 
                          is.tt = FALSE, 
                          log.OR.x = FALSE, 

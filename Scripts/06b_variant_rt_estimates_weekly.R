@@ -12,10 +12,6 @@ source("Scripts/Functions/functions.R")
 
 infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv.xz")
 
-infections_variants_weekly<-infections_variants_weekly |> 
-  group_by(name_states, days, variant) |> 
-  summarise(I = sum(I, na.rm = T))
-
 #run for everything -Other
 rt_fun_week <- function(df, wallinga_teunis = FALSE, ...){
   suppressPackageStartupMessages(require(EpiEstim))
@@ -23,11 +19,11 @@ rt_fun_week <- function(df, wallinga_teunis = FALSE, ...){
   dots<-list(...)
   
   ## Making the time series have all weeks in the period
-  df2<-df |> 
-    ungroup() |> 
-    complete(days = full_seq(df$days, period = 7)) |> 
-    fill(c("name_states", "variant"), .direction = "down") |> 
-    mutate(across(is.numeric, ~round(zoo::na.approx(.x), 0)))
+  df2<-df |>
+  ungroup() |>
+  complete(days = full_seq(df$days, period = 7)) |>
+  fill(c("name_states", "variant"), .direction = "down") |>
+  mutate(across(where(is.numeric), ~round(zoo::na.approx(.x), 0)))
   
   # main R estimate function:
   # will search for column named I which was created in the ci_fun but explicitly named here
@@ -58,15 +54,21 @@ rt_fun_week <- function(df, wallinga_teunis = FALSE, ...){
     # by drawing from two ( truncated normal ) distributions 
     # for the mean and standard deviation of the serial interval
     config <- make_config(list(mean_si = 3.5, 
-                               std_si = 1))
+                   std_mean_si = 1, 
+                   min_mean_si = 1, 
+                   max_mean_si = 6, # estimates for SARS-CoV-2 serial interval
+                   std_si = 1, 
+                   std_std_si = 0.5, 
+                   min_std_si = 0.5, 
+                   max_std_si = 1.5))
     
     mean_Rt <- suppressMessages(EpiEstim::estimate_R(incid = df2$I,
                                     dt = 7L, 
                                     dt_out = 7L,
-                                    iter = 50L,
-                                    # grid = list(precision = 0.001, min = -1, max = 1),
-                                    method="parametric_si",
-                                    config = config))
+                                    iter = 10L,
+                                    grid = list(precision = 0.001, min = -1, max = 1),
+                                    method="non_parametric_si",
+                                    config = make_config(si_distr=c(0.000,0.233,0.359,0.198,0.103,0.053,0.027,0.014,0.007,0.003,0.002,0.001))))
     
     # #binds them into a dataframe
     rt_df<-cbind.data.frame(day = mean_Rt$R$t_start,
@@ -82,7 +84,7 @@ rt_fun_week <- function(df, wallinga_teunis = FALSE, ...){
     ungroup() |> 
     complete(days = full_seq(df2$days, period = 1)) |> 
     fill(c("name_states", "variant", "week"), .direction = "down") |> 
-    mutate(across(is.numeric, ~round(zoo::na.spline(.x), 0))) |> 
+    mutate(across(is.numeric, ~round(zoo::na.approx(.x), 0))) |> 
     rowid_to_column(var = "day") |> 
     left_join(rt_df, by = c("day"))
   

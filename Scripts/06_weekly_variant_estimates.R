@@ -52,7 +52,7 @@ for (i in variants) {
   mean_Rt <- estimate_R(tmp$I, 
                         dt = 7L,
                         dt_out = 7L,
-                        iter = 10L,
+                        iter = 5L,
                         grid = list(precision = 0.001, min = -1, max = 1),
                         method="parametric_si",
                         config = config)

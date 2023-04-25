@@ -12,10 +12,6 @@ source("Scripts/Functions/functions.R")
 
 infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
-infections_variants_daily<-infections_variants_daily |>
-  group_by(name_states, days, variant) |> 
-  summarise(I = sum(I, na.rm = T))
-
 #run for everything -Other
 rt_fun <- function(df, wallinga_teunis = FALSE){
   suppressPackageStartupMessages(require(EpiEstim))

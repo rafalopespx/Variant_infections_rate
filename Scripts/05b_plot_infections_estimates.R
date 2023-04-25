@@ -16,7 +16,6 @@ infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.x
 
 ## Plot daily
 plot_infections_daily<-infections_variants_daily |> 
-  # filter(variant != "Other") |>
   mutate(variant = droplevels(factor(variant))) |> 
   ggplot(aes(x = days, y = I, 
              col = variant, fill = variant))+
@@ -44,7 +43,6 @@ ggsave(filename = "Output/Plots/plt_infections_daily_states.png",
 
 ## Plot weekly
 plot_infections_weekly<-infections_variants_weekly |> 
-  # filter(variant != "Other") |>
   mutate(variant = droplevels(factor(variant))) |> 
   ggplot(aes(x = days, y = I, 
              col = variant, fill = variant))+
@@ -100,10 +98,10 @@ plot_infections_list_daily<-lapply(states, function(x){
     filter(name_states == x) |>
     plt_fun(title = x)
   
-  ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_daily.png"), 
-         width = 15, 
-         height = 9, 
-         dpi = 100)
+  # ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_daily.png"),
+  #        width = 15,
+  #        height = 9,
+  #        dpi = 100)
 })
 
 ## Per states with facet per variant, weekly
@@ -114,32 +112,10 @@ plot_infections_list_weekly<-lapply(states, function(x){
     filter(name_states == x) |>
     plt_fun(title = x)
   
-  ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_weekly.png"), 
-         width = 15, 
-         height = 9, 
-         dpi = 100)
+  # ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_weekly.png"),
+  #        width = 15,
+  #        height = 9,
+  #        dpi = 100)
 })
 
-
-## Split over states and variants
-rt_split<-rt_estimates %>% 
-  split(list(.$name_states, .$variant))
-
-## Function to estimate the average Rts
-mean_rt<-function(x, first_something_days){
-  x<-x |> 
-    filter(!is.na(Rt))
-  
-  if(!missing(first_something_days)){
-    first_something_days<-as.numeric(first_something_days)
-    x<-x[1:first_something_days,]
-  }
-  
-  x<-x |> 
-    group_by(name_states, variant) |> 
-    summarise(mean_rt = mean(Rt, na.rm = T), 
-              mean_lower = mean(lower, na.rm = T),
-              mean_upper = mean(upper, na.rm = T))
-  
-  return(x)
-}
+#
