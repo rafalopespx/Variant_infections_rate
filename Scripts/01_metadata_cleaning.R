@@ -26,7 +26,9 @@ metadata<-metadata |>
   ## Filtering out any state name that is not matching 49 contiguous states plus Alaska and Hawaii
   filter(division %in% states$name_states)
   
-vroom_write(x = metadata, file = "Data//metadata_us_raw.csv.xz")
+vroom_write(x = metadata, file = "Data/metadata_us_raw.csv.xz")
+
+metadata<-vroom("Data/metadata_us_raw.csv.xz")
 
 ## Formatting metadata in a more pratical form
 metadata <- metadata |> 
@@ -46,22 +48,19 @@ metadata <- metadata |>
                                    pattern = '^(?=.*B.1.617.2)', 
                                    perl = TRUE) ~ 'Delta*',
                              grepl(x = pango_lineage, 
-                                   pattern = '^(?=.*BA.1)|(?=.*B.1.1.529)', 
+                                   pattern = '^(?=.*BA.1)|(?=.*B.1.1.529.1)|(?=.*BD.1)', 
                                    perl = TRUE) ~ 'Omicron BA.1*',
-                             # grepl(x = pango_lineage, 
-                             #       pattern = '^(?=.*BA.2.75)', 
-                             #       perl = TRUE) ~ 'Omicron BA.2.75*',
                              grepl(x = pango_lineage, 
-                                   pattern = '^(?=.*BA.2)', 
+                                   pattern = '^(?=.*BA.2)|(?=.*B.1.1.529.2)|(?=.*^B[JGHLMNSRY])|(?=.*^C[ABMJVH])|(?=.*^D[DVS])|(?=.*^E[PJ])|(?=.*^F[J])', 
                                    perl = TRUE) ~ 'Omicron BA.2*',
                              grepl(x = pango_lineage, 
-                                   pattern = '^(?=.*BA.3)', 
+                                   pattern = '^(?=.*BA.3)|(?=.*B.1.1.529.3)', 
                                    perl = TRUE) ~ 'Omicron BA.3*',
                              grepl(x = pango_lineage, 
-                                   pattern = '^(?=.*BA.4)', 
+                                   pattern = '^(?=.*BA.4)|(?=.*B.1.1.529.4)|(?=.*^C[S])|(?=.*^D[C])', 
                                    perl = TRUE) ~ 'Omicron BA.4*',
                              grepl(x = pango_lineage, 
-                                   pattern = '^(?=.*BA.5)|(?=.*BQ)', 
+                                   pattern = '^(?=.*BA.5)|(?=.*B.1.1.529.5)|(?=.*^B[EQKTFUVZW])|(?=.*^C[CDEKNULPYRFGTWZQ])|(?=.*^D[FAGBLHEJQYZURMNKPTW])|(?=.*^E[ACNEQFYDRHTWZSV])|(?=.*^F[A-CF])', 
                                    perl = TRUE) ~ 'Omicron BA.5*',
                              grepl(x = pango_lineage,
                                    pattern = '^(?=.*XBB)',

@@ -12,11 +12,20 @@ source("Scripts/Functions/functions.R")
 ## Filtered metadata
 metadata<-vroom("Data/metadata_us.csv.xz")
 
-metadata |> 
-  filter(division == "Connecticut", 
-         voc_cdc == "Other") |> 
-  ## Grouping by epiweek, state and voc_cdc
-  summarise(n=n(), .by = c(epiweek, pango_lineage)) |> 
-  mutate(freq = round(100*n/sum(n),2)) |> 
-  ggplot(aes(x = epiweek, y = n, col = pango_lineage, fill = pango_lineage))+
-  geom_col(position = position_stack())
+freq_fun<-function(x){
+  table<- metadata |> 
+    filter(voc_cdc == x, 
+           !is.na(pango_lineage))|> 
+    select(voc_cdc, pango_lineage) |> 
+    summarise(n = n(), 
+              .by = c(voc_cdc, pango_lineage)) |> 
+    mutate(freq = round(100*n/sum(n),2))
+}
+
+variants<-unique(metadata$voc_cdc)
+
+table_list<-sapply(variants, freq_fun)
+
+table_list |> 
+  filter(voc_cdc == "Omicron BA.5*") |> 
+  pull(var = pango_lineage)
