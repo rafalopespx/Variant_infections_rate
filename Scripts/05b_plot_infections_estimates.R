@@ -98,10 +98,10 @@ plot_infections_list_daily<-lapply(states, function(x){
     filter(name_states == x) |>
     plt_fun(title = x)
   
-  # ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_daily.png"),
-  #        width = 15,
-  #        height = 9,
-  #        dpi = 100)
+  ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_daily.png"),
+         width = 15,
+         height = 9,
+         dpi = 100)
 })
 
 ## Per states with facet per variant, weekly
@@ -112,10 +112,10 @@ plot_infections_list_weekly<-lapply(states, function(x){
     filter(name_states == x) |>
     plt_fun(title = x)
   
-  # ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_weekly.png"),
-  #        width = 15,
-  #        height = 9,
-  #        dpi = 100)
+  ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_weekly.png"),
+         width = 15,
+         height = 9,
+         dpi = 100)
 })
 
 #

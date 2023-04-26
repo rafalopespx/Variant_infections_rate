@@ -45,22 +45,29 @@ plt_rt<-function(data, x.title, y.title, title = NULL, sec.axis.name = NULL){
     geom_line()+
     geom_ribbon(alpha = .15)+
     geom_col(aes(x = days, y = freq*scaleFactor), 
-             # col = "gray90", 
+             col = NA,
              show.legend = F, 
-               position = position_stack(),
-               alpha = .5)+
+             width = 5,
+               # position = position_stack(),
+               alpha = .15)+
     theme_minimal()+
     theme(legend.position = "bottom", 
           axis.text.x = element_text(angle = 90))+
-    scale_x_date(date_breaks = "2 months", 
+    scale_x_date(date_breaks = "1 month", 
                  date_labels = "%b %y")+
     labs(x = x.title, 
          y = y.title,
          title = title)+
-    scale_fill_brewer(aesthetics = c("color", "fill"), 
-                      palette = "Paired", 
-                      name = "VOCs")+
-    scale_y_continuous(sec.axis=sec_axis(~./scaleFactor, name=sec.axis.name))
+    colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
+                                               palette = "Zissou1", 
+                                               aesthetics = c("color", "fill"))+
+    scale_y_continuous(sec.axis=sec_axis(~./scaleFactor, name=sec.axis.name))+
+    facet_wrap(~variant, ncol = 1)+
+    theme(
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+    )
+  # rt_plot
   
   return(rt_plot)
   
@@ -74,15 +81,12 @@ variant<-unique(rt_estimates$variant)
 plot_rt_list<-lapply(states, function(x){
   plt<-rt_estimates |> 
     filter(name_states == x) |>
+    filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
+                          "Omicron XBB*")) |> 
     plt_rt(x.title = "Date", 
            y.title = "Instantenous Reproduction Number \n Rt(t)", 
            title = x, 
-           sec.axis.name = "Frequency (%)")+
-    facet_wrap(~variant, ncol = 1)+
-    theme(
-      strip.background = element_blank(),
-      strip.text.x = element_blank()
-    )
+           sec.axis.name = "Frequency (%)")
   
   ggsave(filename = paste0("Output/Plots/States_rt/rt_freq/plt_rt_estimates_frequence_", x, "_daily.png"),
          plot = plt,

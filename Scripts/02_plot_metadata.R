@@ -44,7 +44,7 @@ plt_us_variant_counts
 ## Saving the plot
 ggsave(plot = plt_us_variant_counts, 
        filename = "Output/plot_us_raw_count_genomes.png", 
-       width = 11, 
+       width = 15, 
        height = 9, 
        dpi = 100)
 
@@ -71,7 +71,7 @@ plt_variant_counts
 ## ggsave the plots
 ggsave(plot = plt_variant_counts, 
        filename = "Output/plot_raw_count_genomes_us.png", 
-       width = 11, 
+       width = 15, 
        height = 9, 
        dpi = 100)
 
@@ -99,7 +99,7 @@ plt_variant_freq
 ## ggsave the plots
 ggsave(plot = plt_variant_freq, 
        filename = "Output/plot_raw_freq_genomes_us.png", 
-       width = 11, 
+       width = 15, 
        height = 9, 
        dpi = 100)
 
