@@ -35,7 +35,7 @@ rt_estimates<-rt_estimates |>
 plt_rt<-function(data, x.title, y.title, title = NULL, sec.axis.name = NULL){
   
   ## median Rt and ribbon for 95% IC
-  scaleFactor<-max(data$Rt, na.rm = T)/max(data$freq, na.rm = T)
+  scaleFactor<-max(data$Rt, na.rm = T)/max(data$I, na.rm = T)
   
   rt_plot<-data |> 
     ggplot(aes(x = days, y = Rt, 
@@ -44,10 +44,10 @@ plt_rt<-function(data, x.title, y.title, title = NULL, sec.axis.name = NULL){
     geom_hline(yintercept = 1, show.legend = F, aes(col = "gray9"), alpha = .5)+
     geom_line()+
     geom_ribbon(alpha = .15)+
-    geom_col(aes(x = days, y = freq*scaleFactor), 
+    geom_col(aes(x = days, y = I*scaleFactor), 
              col = NA,
              show.legend = F, 
-             width = 5,
+             width = 1,
                # position = position_stack(),
                alpha = .15)+
     theme_minimal()+
@@ -62,7 +62,7 @@ plt_rt<-function(data, x.title, y.title, title = NULL, sec.axis.name = NULL){
                                                palette = "Zissou1", 
                                                aesthetics = c("color", "fill"))+
     scale_y_continuous(sec.axis=sec_axis(~./scaleFactor, name=sec.axis.name))+
-    facet_wrap(~variant, ncol = 1)+
+    facet_wrap(~variant, ncol = 1, scales = "free_y")+
     theme(
       strip.background = element_blank(),
       strip.text.x = element_blank()
@@ -81,20 +81,23 @@ variant<-unique(rt_estimates$variant)
 plot_rt_list<-lapply(states, function(x){
   plt<-rt_estimates |> 
     filter(name_states == x) |>
-    filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
-                          "Omicron XBB*")) |> 
+    filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+                          "Omicron XBB*"), 
+          days >= "2021-12-01") |> 
     plt_rt(x.title = "Date", 
            y.title = "Instantenous Reproduction Number \n Rt(t)", 
            title = x, 
-           sec.axis.name = "Frequency (%)")
+           sec.axis.name = "Infections")
   
-  ggsave(filename = paste0("Output/Plots/States_rt/rt_freq/plt_rt_estimates_frequence_", x, "_daily.png"),
-         plot = plt,
-         width = 15,
-         height = 9,
-         dpi = 100)
+  # ggsave(filename = paste0("Output/Plots/States_rt/rt_freq/plt_rt_estimates_frequence_", x, "_daily.png"),
+  #        plot = plt,
+  #        width = 15,
+  #        height = 9,
+  #        dpi = 100)
   
   return(plt)
 })
+
+names(plot_rt_list)<-states
 
 #

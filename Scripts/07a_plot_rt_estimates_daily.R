@@ -71,6 +71,8 @@ plot_rt_list<-lapply(states, function(x){
   return(plt)
 })
 
+names(plot_rt_list)<-states
+
 ## Split over states and variants
 rt_split<-rt_estimates %>% 
   split(list(.$name_states, .$variant))

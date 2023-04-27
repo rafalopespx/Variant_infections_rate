@@ -16,6 +16,12 @@ infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.x
 rt_fun <- function(df, wallinga_teunis = FALSE){
   suppressPackageStartupMessages(require(EpiEstim))
   
+  ## Completing the dates, if there is some missing
+  df<-df |> 
+    complete(days = full_seq(days, period = 1)) |> 
+    fill(c(name_states, variant), .direction = "down") |> 
+    mutate(I = round(zoo::na.approx(I), 0))
+  
   #1st day with infections of variant to start the R estimate otherwise R estimate artificially high
   non0 <- min(which(df$I > 0)) 
   #last day with infections of variant to start the R estimate otherwise R estimate artificially high

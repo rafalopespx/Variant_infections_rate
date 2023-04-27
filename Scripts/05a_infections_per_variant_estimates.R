@@ -128,13 +128,13 @@ infections_estimates<-function(data, daily = FALSE){
 
 ## Creating estimates on weekly and daily basis
 
-## Weekly
-infections_variants_weekly<-estimates_variant |> 
-  infections_estimates() |> 
-  bind_rows(.id = "name_states")
-
-vroom_write(x = infections_variants_weekly, 
-            file = "Data/infections_estimates_variants_weekly.csv.xz")
+# ## Weekly
+# infections_variants_weekly<-estimates_variant |> 
+#   infections_estimates() |> 
+#   bind_rows(.id = "name_states")
+# 
+# vroom_write(x = infections_variants_weekly, 
+#             file = "Data/infections_estimates_variants_weekly.csv.xz")
 
 ## Daily
 infections_variants_daily<-estimates_variant |> 
