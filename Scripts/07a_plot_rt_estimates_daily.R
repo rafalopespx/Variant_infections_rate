@@ -89,9 +89,9 @@ mean_rt<-function(x, first_something_days){
   
   x<-x |> 
     group_by(name_states, variant) |> 
-    summarise(mean_rt = mean(Rt, na.rm = T), 
-              mean_lower = mean(lower, na.rm = T),
-              mean_upper = mean(upper, na.rm = T))
+    summarise(mean_rt = median(Rt, na.rm = T), 
+              mean_lower = median(lower, na.rm = T),
+              mean_upper = median(upper, na.rm = T))
   
   return(x)
 }
@@ -147,43 +147,48 @@ plt_rt_avg<-function(x, avg_days){
     filter(!is.na(HHS_region)) |> 
     ggplot(aes(x = HHS_region, 
                y = mean_rt, 
-               col = variant, fill = variant))+
-    geom_hline(yintercept = 1, 
-               show.legend = F, 
+               col = variant))+
+    geom_hline(yintercept = 1,
+               show.legend = F,
                aes(col = "gray9"), alpha = .5)+
     geom_violin(position = position_dodge(width = 0.9),
+                fill = NA,
                 scale = "width",
                 trim = FALSE,
                 alpha = .5) +
-    geom_point(position = position_jitterdodge(jitter.width  = .1))+
+    # geom_point(position = position_jitterdodge(jitter.width  = .1))+
     ggrepel::geom_text_repel(data = subset(x, mean_rt > 1.5 | mean_rt < 1),
                              aes(label = `State Code`),
                              min.segment.length = 0,
                              size = 3,
                              position = position_jitterdodge(jitter.width = .1),
                              show.legend = FALSE)+
-    # geom_jitter(position = position_dodge(width = .9, preserve = "total"))+
-    stat_summary(fun = median, geom = "crossbar", 
+    geom_jitter(data = subset(x, mean_rt > 1.5 | mean_rt < 1),
+                position = position_dodge(width = .9, preserve = "total"))+
+    stat_summary(fun.data = median_hilow, geom = "pointrange",
+                 fun.args = list(conf.int = 0.95),
                  position = position_dodge(width = .9),
                  # width = 1, 
                  size = .25, 
                  show.legend = FALSE)+
+    coord_trans(y = "log10")+
     theme_minimal()+
     theme(legend.position = "bottom", 
-          axis.text.x = element_text(angle = 90, size = 9))+
+          axis.text.x = element_text(angle = 0, size = 9))+
     labs(x = "HHS Region", 
          y = "Average Reproduction Number \n Rt", 
          subtitle = paste0("Average over ", avg_days," first days"), 
          caption = "Showing state code only for states with avg Rt > 1.5 or < 1.0")+
-    colorspace::scale_fill_discrete_divergingx(name = "VOCs", 
-                                               palette = "RdYlBu", 
-                                               aesthetics = c("color", "fill"))+
-    facet_wrap(~variant, nrow = 2, scales = "free_y", drop = T)
+    colorspace::scale_color_discrete_divergingx(name = "VOCs", 
+                                               palette = "Zissou1")+
+    scale_y_continuous(limits = c(NA, 2))
+  # +
+  #   facet_wrap(~variant, nrow = 2, scales = "free_y", drop = T)
 }
 
 ## Plotting
 plt_mean_rt_30<-mean_rt_30 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
+  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
                         "Omicron XBB*")) |> 
   plt_rt_avg(avg_days = 30)
 plt_mean_rt_30
@@ -195,7 +200,7 @@ ggsave(filename = "Output/Plots/average_rt/plt_avg_30_daily.png",
        dpi = 100)
 
 plt_mean_rt_60<-mean_rt_60 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
+  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
                         "Omicron XBB*")) |>  
   plt_rt_avg(avg_days = 60)
 plt_mean_rt_60
@@ -207,7 +212,7 @@ ggsave(filename = "Output/Plots/average_rt/plt_avg_60_daily.png",
        dpi = 100)
 
 plt_mean_rt_90<-mean_rt_90 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
+  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
                         "Omicron XBB*")) |> 
   plt_rt_avg(avg_days = 90)
 plt_mean_rt_90
@@ -219,8 +224,8 @@ ggsave(filename = "Output/Plots/average_rt/plt_avg_90_daily.png",
        dpi = 100)
 
 plt_mean_rt_120<-mean_rt_120 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
-                        "Omicron XBB*")) |>  
+  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+                        "Omicron XBB*")) |> 
   plt_rt_avg(avg_days = 120)
 plt_mean_rt_120
 
