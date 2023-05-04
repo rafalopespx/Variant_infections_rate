@@ -27,7 +27,7 @@ no_axis <- theme(axis.title=element_blank(),
 plt_us_variant_counts<-variant_count |>
   filter(epiweek >= "2022-01-01", epiweek <= "2023-03-01") |>
   ggplot(aes(x = epiweek, y = n, fill = voc_cdc))+
-  geom_col()+
+  geom_col(width = 7)+
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+
@@ -52,8 +52,8 @@ ggsave(plot = plt_us_variant_counts,
 plt_variant_counts<- variant_count |>
   filter(epiweek >= "2022-01-01", epiweek <= "2023-03-01") |>  
   ggplot(aes(x = epiweek, y = n, fill = voc_cdc))+
-  geom_col()+
-  facet_geo(name_states~., grid = "us_state_grid1", scales = "free_y")+
+  geom_col(width = 7)+
+  facet_geo(name_states~., grid = "us_state_grid1")+
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+

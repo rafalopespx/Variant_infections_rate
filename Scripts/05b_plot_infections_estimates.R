@@ -10,7 +10,7 @@ lapply(packs,require, character.only = TRUE)
 source("Scripts/Functions/functions.R")
 # source("Scripts/estimate_rt_ro_fun.R")
 
-infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv.xz")
+# infections_variants_weekly<-vroom("Data/infections_estimates_variants_weekly.csv.xz")
 
 infections_variants_daily<-vroom("Data/infections_estimates_variants_daily.csv.xz")
 
@@ -41,31 +41,31 @@ ggsave(filename = "Output/Plots/plt_infections_daily_states.png",
        height = 9, 
        dpi = 100)
 
-## Plot weekly
-plot_infections_weekly<-infections_variants_weekly |> 
-  mutate(variant = droplevels(factor(variant))) |> 
-  ggplot(aes(x = days, y = I, 
-             col = variant, fill = variant))+
-  geom_line()+
-  theme_minimal()+
-  theme(legend.position = "bottom", 
-        axis.text.x = element_text(angle = 90))+
-  facet_geo(name_states~., scales = "free_y")+
-  scale_x_date(date_breaks = "4 months", 
-               date_labels = "%b %y")+
-  labs(x = "Date", 
-       y = "Infections number per variant")+
-  scale_fill_brewer(aesthetics = c("color", "fill"), 
-                    palette = "Spectral", 
-                    name = "VOCs")
-plot_infections_weekly
-
-## Saving infections plot
-ggsave(filename = "Output/Plots/plt_infections_weekly_states.png", 
-       plot = plot_infections_daily, 
-       width = 15,
-       height = 9, 
-       dpi = 100)
+# ## Plot weekly
+# plot_infections_weekly<-infections_variants_weekly |> 
+#   mutate(variant = droplevels(factor(variant))) |> 
+#   ggplot(aes(x = days, y = I, 
+#              col = variant, fill = variant))+
+#   geom_line()+
+#   theme_minimal()+
+#   theme(legend.position = "bottom", 
+#         axis.text.x = element_text(angle = 90))+
+#   facet_geo(name_states~., scales = "free_y")+
+#   scale_x_date(date_breaks = "4 months", 
+#                date_labels = "%b %y")+
+#   labs(x = "Date", 
+#        y = "Infections number per variant")+
+#   scale_fill_brewer(aesthetics = c("color", "fill"), 
+#                     palette = "Spectral", 
+#                     name = "VOCs")
+# plot_infections_weekly
+# 
+# ## Saving infections plot
+# ggsave(filename = "Output/Plots/plt_infections_weekly_states.png", 
+#        plot = plot_infections_daily, 
+#        width = 15,
+#        height = 9, 
+#        dpi = 100)
 
 ## Plots for each state
 
@@ -98,10 +98,10 @@ plot_infections_list_daily<-lapply(states, function(x){
     filter(name_states == x) |>
     plt_fun(title = x)
   
-  ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_daily.png"),
-         width = 15,
-         height = 9,
-         dpi = 100)
+  # ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_daily.png"),
+  #        width = 15,
+  #        height = 9,
+  #        dpi = 100)
 })
 
 ## Per states with facet per variant, weekly

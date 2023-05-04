@@ -60,7 +60,7 @@ metadata <- metadata |>
                                    pattern = '^(?=.*BA.4)|(?=.*B.1.1.529.4)|(?=.*^C[S])|(?=.*^D[C])', 
                                    perl = TRUE) ~ 'Omicron BA.4*',
                              grepl(x = pango_lineage, 
-                                   pattern = '^(?=.*BA.5)|(?=.*B.1.1.529.5)|(?=.*^B[EQKTFUVZW])|(?=.*^C[CDEKNULPYRFGTWZQ])|(?=.*^D[FAGBLHEJQYZURMNKPTW])|(?=.*^E[ACNEQFYDRHTWZSV])|(?=.*^F[A-CF])', 
+                                   pattern = '^(?=.*BA.5)|(?=.*B.1.1.529.5)|(?=.*^B[EQKTFUVZW])|(?=.*^C[CDEKNULPYRFGTWZQ])|(?=.*^D[FAGBLHEJQYZURMNKPTW])|(?=.*^E[ACNEQFYDRHTWZSV])|(?=.*^F[ABCF])', 
                                    perl = TRUE) ~ 'Omicron BA.5*',
                              grepl(x = pango_lineage,
                                    pattern = '^(?=.*XBB)',
@@ -83,6 +83,9 @@ metadata <- metadata |>
 vroom_write(x = metadata, 
             file = "Data/metadata_us.csv.xz")
 
+## Reading the saved categorized .csv
+metadata<-vroom("Data/metadata_us.csv.xz")
+
 ## Variant sequences counts
 variant_count<-metadata |> 
   ## First probable sequence of Omicron in the US
@@ -92,8 +95,10 @@ variant_count<-metadata |>
   ## Grouping by epiweek, state and voc_cdc
   group_by(epiweek, division, voc_cdc) |> 
   summarise_at(vars(copy_date), list(n = sum)) |>
-  mutate(freq = round(100*n/sum(n),2)) |> 
-  rename(name_states = division)
+  mutate(freq = round(100*n/sum(n),1)) |> 
+  rename(name_states = division) |> 
+  ## filtering out frequencies below 0.5%, this is to help with 'data gremlins'
+  filter(freq >= 1)
 
 ## Saving counts data
 vroom_write(x = variant_count, file = "Data/variant_counts_us.csv.xz")
