@@ -26,9 +26,34 @@ variant_count<-vroom("Data/variant_counts_us.csv.xz") |>
                                      "Omicron XBB*")))
 
 ## Joining Rt with variant counts
-rt_estimates<-rt_estimates |>
-  full_join(variant_count) |>
-  mutate(variant = droplevels(factor(variant)))
+estimates_rt_incidence<-rt_estimates |>
+  left_join(variant_count) |>
+  mutate(variant = droplevels(factor(variant))) |> 
+  left_join(pop_states, by = c("name_states" = "state")) |> 
+  rename(infections = I) |> 
+  mutate(incidence = (infections/pop)*10^5) |> 
+  filter(incidence >= 100)
+
+## Rt ratios
+rt_ratios<-estimates_rt_incidence |> 
+  rename(median = Rt) |> 
+  pivot_wider(id_cols = c("days", "name_states"),
+              names_from = variant,
+              values_from = c(median, upper, lower)) 
+
+rt_ratios_longer <- rt_ratios|> 
+  mutate(BA2BA1_ratio = `median_Omicron BA.2*`/`median_Omicron BA.1*`,
+         XBBBA2_ratio = `median_Omicron XBB*`/`median_Omicron BA.2*`,
+         BA5BA4_ratio = `median_Omicron BA.4*`/`median_Omicron BA.5*`,
+         BA4BA2_ratio = `median_Omicron BA.4*`/`median_Omicron BA.2*`,
+         BA5BA2_ratio = `median_Omicron BA.5*`/`median_Omicron BA.2*`) |>
+  select(days, name_states, ends_with("ratio")) 
+
+rt_ratios_longer<-rt_ratios_longer|> 
+  pivot_longer(cols = c(-days, -name_states), 
+               names_to = "pairs",
+               values_to = "ratio") |> 
+  filter(!is.na(ratio))
 
 ## Per states with facet per variant
 states<-unique(rt_estimates$name_states)
@@ -87,15 +112,15 @@ plt_rt_freq<-function(data, x.title, y.title, title = NULL, sec.axis.name = NULL
 
 
 plot_rt_freq_list<-lapply(states, function(x){
-  plt<-plt_rt_freq(data = rt_estimates |> 
-                filter(name_states == x) |>
-                filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
-                                      "Omicron XBB*"), 
-                       days >= "2021-12-01"),
-              x.title = "Date", 
-              y.title = "Instantenous Reproduction Number \n Rt(t)", 
-              title = x, 
-              sec.axis.name = "Frequency \n (%)")
+  plt<-plt_rt_freq(data = estimates_rt_incidence |> 
+                     filter(name_states == x) |>
+                     filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+                                           "Omicron XBB*"), 
+                            days >= "2021-12-01"),
+                   x.title = "Date", 
+                   y.title = "Instantenous Reproduction Number \n Rt(t)", 
+                   title = x, 
+                   sec.axis.name = "Frequency \n (%)")
   
   # ggsave(filename = paste0("Output/Plots/States_rt/rt_freq/plt_rt_estimates_frequence_", x, "_daily.png"),
   #        plot = plt,
@@ -110,9 +135,18 @@ names(plot_rt_freq_list)<-states
 
 plot_rt_freq_list$California
 plot_rt_freq_list$`New York`
-plot_rt_infec_list$Connecticut
+plot_rt_freq_list$Connecticut
 
 ## Plotting Rt and Infections
+## Joining Rt with variant counts
+estimates_rt_incidence<-rt_estimates |>
+  left_join(variant_count) |>
+  mutate(variant = droplevels(factor(variant))) |> 
+  left_join(pop_states, by = c("name_states" = "state")) |> 
+  rename(infections = I) |> 
+  mutate(incidence = (infections/pop)*10^5) |> 
+  filter(incidence >= 150)
+
 ## Making function to plot
 plt_rt_infec<-function(data, x.title, y.title, title = NULL, sec.axis.name = NULL){
   
@@ -120,7 +154,7 @@ plt_rt_infec<-function(data, x.title, y.title, title = NULL, sec.axis.name = NUL
   rm(scaleFactor)
   
   ## Scalling factor
-  scaleFactor<-max(data$upper, na.rm = T)/max(data$I, na.rm = T)
+  scaleFactor<-max(data$upper, na.rm = T)/max(data$incidence, na.rm = T)
   
   rt_plot<-data |>
     ggplot(aes(x = days, y = Rt, 
@@ -130,14 +164,12 @@ plt_rt_infec<-function(data, x.title, y.title, title = NULL, sec.axis.name = NUL
     geom_ribbon(aes(ymin = lower, 
                     ymax = upper),
                 alpha = .15)+
-    geom_col(aes(x = days, y = I*scaleFactor), 
+    geom_col(aes(x = days, y = incidence*scaleFactor), 
              col = NA,
              show.legend = F,
              width = 1,
              alpha = .15)+
     theme_minimal()+
-    theme(legend.position = "bottom", 
-          axis.text.x = element_text(angle = 90))+
     scale_x_date(date_breaks = "1 month", 
                  date_labels = "%b %y")+
     labs(x = x.title, 
@@ -145,13 +177,15 @@ plt_rt_infec<-function(data, x.title, y.title, title = NULL, sec.axis.name = NUL
          title = title)+
     colorspace::scale_fill_discrete_divergingx(name = "VOCs",
                                                palette = "Zissou1",
-                                               aesthetics = c("color", "fill"))+
+                                               aesthetics = c("color", "fill"),
+                                               rev = T)+
     scale_y_continuous(sec.axis=sec_axis(~./scaleFactor, 
                                          name=sec.axis.name))+
     facet_wrap(~variant, ncol = 1, scales = "free_y")+
-    theme(
-      strip.background = element_blank(),
-      strip.text.x = element_blank()
+    theme(legend.position = "bottom", 
+          axis.text.x = element_text(angle = 90),
+          strip.background = element_blank(),
+          strip.text.x = element_blank()
     )
   # rt_plot
   
@@ -161,15 +195,15 @@ plt_rt_infec<-function(data, x.title, y.title, title = NULL, sec.axis.name = NUL
 
 
 plot_rt_infec_list<-lapply(states, function(x){
-  plt<-plt_rt_infec(data = rt_estimates |> 
-                     filter(name_states == x) |>
-                     filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
-                                           "Omicron XBB*"), 
-                            days >= "2021-12-01"),
-                   x.title = "Date", 
-                   y.title = "Instantenous Reproduction Number \n Rt(t)", 
-                   title = x, 
-                   sec.axis.name = "Infections \n (In millions)")
+  plt<-plt_rt_infec(data = estimates_rt_incidence |> 
+                      filter(name_states == x) |>
+                      filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+                                            "Omicron XBB*"), 
+                             days >= "2021-12-01"),
+                    x.title = "Date", 
+                    y.title = "Instantenous Reproduction Number \n Rt(t)", 
+                    title = x, 
+                    sec.axis.name = "Infections per 100k \n people per day")
   
   # ggsave(filename = paste0("Output/Plots/States_rt/rt_infec/plt_rt_estimates_infections_", x, "_daily.png"),
   #        plot = plt,

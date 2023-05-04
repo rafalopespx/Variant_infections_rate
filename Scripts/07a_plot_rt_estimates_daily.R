@@ -31,15 +31,17 @@ plt_rt<-function(data, x.title, y.title, title = NULL){
     labs(x = x.title, 
          y = y.title, 
          title = title)+
-    scale_fill_brewer(aesthetics = c("color", "fill"), 
-                      palette = "Paired", 
-                      name = "VOCs")
+    colorspace::scale_fill_discrete_divergingx(aesthetics = c("color", "fill"), 
+                                               palette = "Zissou1",
+                                               name = "VOCs")
   
 }
 
 
 ## Plotting states
-plot_rt_states<-rt_estimates |>
+plot_rt_states<-rt_estimates |> 
+  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+                        "Omicron XBB*")) |> 
   plt_rt(x.title = "Date", 
          y.title = "Instantenous Reproduction Number \n Rt(t)")+
   facet_geo(name_states~.)
@@ -56,6 +58,8 @@ states<-unique(rt_estimates$name_states)
 
 plot_rt_list<-lapply(states, function(x){
   plt<-rt_estimates |> 
+    filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+                          "Omicron XBB*")) |> 
     filter(name_states == x) |>
     plt_rt(x.title = "Date", 
            y.title = "Instantenous Reproduction Number \n Rt(t)", 
@@ -145,7 +149,7 @@ mean_rt_120<-lapply(rt_split, mean_rt, 120) |>
 plt_rt_avg<-function(x, avg_days){
   x<-x|> 
     filter(!is.na(HHS_region)) |> 
-    ggplot(aes(x = HHS_region, 
+    ggplot(aes(x = variant, 
                y = mean_rt, 
                col = variant))+
     geom_hline(yintercept = 1,
@@ -156,41 +160,40 @@ plt_rt_avg<-function(x, avg_days){
                 scale = "width",
                 trim = FALSE,
                 alpha = .5) +
-    # geom_point(position = position_jitterdodge(jitter.width  = .1))+
-    ggrepel::geom_text_repel(data = subset(x, mean_rt > 1.5 | mean_rt < 1),
-                             aes(label = `State Code`),
+    geom_point(position = position_jitterdodge(jitter.width  = .1, dodge.width = .9))+
+    ggrepel::geom_text_repel(aes(label = `State Code`),
                              min.segment.length = 0,
                              size = 3,
-                             position = position_jitterdodge(jitter.width = .1),
+                             position = position_jitterdodge(jitter.width = .1, dodge.width = .9),
                              show.legend = FALSE)+
-    geom_jitter(data = subset(x, mean_rt > 1.5 | mean_rt < 1),
-                position = position_dodge(width = .9, preserve = "total"))+
+    # geom_jitter(position = position_dodge(width = .9, preserve = "total"))+
     stat_summary(fun.data = median_hilow, geom = "pointrange",
                  fun.args = list(conf.int = 0.95),
                  position = position_dodge(width = .9),
+                 pch = 21,
                  # width = 1, 
                  size = .25, 
                  show.legend = FALSE)+
-    coord_trans(y = "log10")+
+    # coord_trans(y = "log10")+
     theme_minimal()+
     theme(legend.position = "bottom", 
-          axis.text.x = element_text(angle = 0, size = 9))+
+          axis.text.x = element_blank())+
     labs(x = "HHS Region", 
          y = "Average Reproduction Number \n Rt", 
-         subtitle = paste0("Average over ", avg_days," first days"), 
-         caption = "Showing state code only for states with avg Rt > 1.5 or < 1.0")+
+         subtitle = paste0("Average over ", avg_days," first days"))+
     colorspace::scale_color_discrete_divergingx(name = "VOCs", 
-                                               palette = "Zissou1")+
-    scale_y_continuous(limits = c(NA, 2))
+                                               palette = "Zissou1")
   # +
   #   facet_wrap(~variant, nrow = 2, scales = "free_y", drop = T)
 }
 
 ## Plotting
 plt_mean_rt_30<-mean_rt_30 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
-                        "Omicron XBB*")) |> 
-  plt_rt_avg(avg_days = 30)
+  mutate(HHS_region = tolower(HHS_region)) |> 
+  # filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+  #                       "Omicron XBB*")) |> 
+  plt_rt_avg(avg_days = 30)+
+  facet_geo(name_states~.)
 plt_mean_rt_30
 
 ggsave(filename = "Output/Plots/average_rt/plt_avg_30_daily.png", 
@@ -200,9 +203,11 @@ ggsave(filename = "Output/Plots/average_rt/plt_avg_30_daily.png",
        dpi = 100)
 
 plt_mean_rt_60<-mean_rt_60 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
-                        "Omicron XBB*")) |>  
-  plt_rt_avg(avg_days = 60)
+  mutate(HHS_region = tolower(HHS_region)) |> 
+  # filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+  #                       "Omicron XBB*")) |>   
+  plt_rt_avg(avg_days = 60)+
+  facet_geo(HHS_region~., grid = "us_hhs_regions_grid1")
 plt_mean_rt_60
 
 ggsave(filename = "Output/Plots/average_rt/plt_avg_60_daily.png", 
@@ -212,9 +217,11 @@ ggsave(filename = "Output/Plots/average_rt/plt_avg_60_daily.png",
        dpi = 100)
 
 plt_mean_rt_90<-mean_rt_90 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
-                        "Omicron XBB*")) |> 
-  plt_rt_avg(avg_days = 90)
+  mutate(HHS_region = tolower(HHS_region)) |> 
+  # filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+  #                       "Omicron XBB*")) |>   
+  plt_rt_avg(avg_days = 90)+
+  facet_geo(HHS_region~., grid = "us_hhs_regions_grid1")
 plt_mean_rt_90
 
 ggsave(filename = "Output/Plots/average_rt/plt_avg_90_daily.png", 
@@ -224,9 +231,11 @@ ggsave(filename = "Output/Plots/average_rt/plt_avg_90_daily.png",
        dpi = 100)
 
 plt_mean_rt_120<-mean_rt_120 |> 
-  filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
-                        "Omicron XBB*")) |> 
-  plt_rt_avg(avg_days = 120)
+  mutate(HHS_region = tolower(HHS_region)) |> 
+  # filter(variant %in% c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*", 
+  #                       "Omicron XBB*")) |>   
+  plt_rt_avg(avg_days = 120)+
+  facet_geo(HHS_region~., grid = "us_hhs_regions_grid1")
 plt_mean_rt_120
 
 ggsave(filename = "Output/Plots/average_rt/plt_avg_120_daily.png", 
