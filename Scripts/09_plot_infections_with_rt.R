@@ -19,7 +19,7 @@ pop_states<-vroom("https://raw.githubusercontent.com/covidestim/covidestim-sourc
 variant_count<-vroom("Data/variant_counts_us.csv.xz") |>
   rename(days = epiweek,
          variant = voc_cdc) |>
-  filter(!variant %in% c("Alpha*", "Beta*", "Gamma*", "Delta*", "Omicron BA.3*", "Rcombinant", "Other")) |>
+  filter(!variant %in% c("Alpha*", "Beta*", "Gamma*", "Delta*", "Omicron BA.3*", "Recombinant", "Other")) |>
   mutate(variant = droplevels(factor(variant))) |>
   mutate(variant = factor(variant,
                           levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*",
@@ -30,30 +30,13 @@ estimates_rt_incidence<-rt_estimates |>
   left_join(variant_count) |>
   mutate(variant = droplevels(factor(variant))) |> 
   left_join(pop_states, by = c("name_states" = "state")) |> 
+  ## Renaming infections
   rename(infections = I) |> 
-  mutate(incidence = (infections/pop)*10^5) |> 
-  filter(incidence >= 100)
-
-## Rt ratios
-rt_ratios<-estimates_rt_incidence |> 
-  rename(median = Rt) |> 
-  pivot_wider(id_cols = c("days", "name_states"),
-              names_from = variant,
-              values_from = c(median, upper, lower)) 
-
-rt_ratios_longer <- rt_ratios|> 
-  mutate(BA2BA1_ratio = `median_Omicron BA.2*`/`median_Omicron BA.1*`,
-         XBBBA2_ratio = `median_Omicron XBB*`/`median_Omicron BA.2*`,
-         BA5BA4_ratio = `median_Omicron BA.4*`/`median_Omicron BA.5*`,
-         BA4BA2_ratio = `median_Omicron BA.4*`/`median_Omicron BA.2*`,
-         BA5BA2_ratio = `median_Omicron BA.5*`/`median_Omicron BA.2*`) |>
-  select(days, name_states, ends_with("ratio")) 
-
-rt_ratios_longer<-rt_ratios_longer|> 
-  pivot_longer(cols = c(-days, -name_states), 
-               names_to = "pairs",
-               values_to = "ratio") |> 
-  filter(!is.na(ratio))
+  ## Creating incidence per 100k
+  mutate(incidence = (infections/pop)*1e5) |> 
+  ## Filtering to greater incidence than 100/100k
+  filter(incidence >= 100, 
+         days <= "2023-03-01")
 
 ## Per states with facet per variant
 states<-unique(rt_estimates$name_states)
@@ -177,8 +160,7 @@ plt_rt_infec<-function(data, x.title, y.title, title = NULL, sec.axis.name = NUL
          title = title)+
     colorspace::scale_fill_discrete_divergingx(name = "VOCs",
                                                palette = "Zissou1",
-                                               aesthetics = c("color", "fill"),
-                                               rev = T)+
+                                               aesthetics = c("color", "fill"))+
     scale_y_continuous(sec.axis=sec_axis(~./scaleFactor, 
                                          name=sec.axis.name))+
     facet_wrap(~variant, ncol = 1, scales = "free_y")+

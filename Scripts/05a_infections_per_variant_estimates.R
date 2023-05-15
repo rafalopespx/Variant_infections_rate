@@ -44,8 +44,8 @@ rm(url)
 gc()
 
 ## Restriging the dates of analysis on both data-set
-estimates_variant<-variants_count_wide |>
-  left_join(covidestim_state,
+estimates_variant<-covidestim_state |>
+  left_join(variants_count_wide,
             by = c("epiweek","name_states")) |> #merges CovidEstim data with our data and keeps only 
   filter(!is.na(infections))
 
@@ -66,7 +66,7 @@ infections_estimates<-function(data, daily = FALSE){
         # create variable for days
         dplyr::mutate(days = epiweek) |>
         # dividing by 7 to make it an average of the week
-        dplyr::mutate(across(starts_with("infections"), ~.x/7)) |> 
+        dplyr::mutate(across(starts_with("infections"), ~.x/7)) |>
         # Complete the dates
         complete(days = seq.Date(min(epiweek), 
                                  max(epiweek), 
@@ -76,13 +76,13 @@ infections_estimates<-function(data, daily = FALSE){
         # cutting off the frequencies less than 0.02, and setting as 0
         dplyr::mutate(across(starts_with("freq"), ~ifelse(.x <= 0.02, 0, .x))) |>
         #calculate variant specific number of infections
-        dplyr::mutate(across(starts_with("freq"), list("infections" = ~.x*infections))) |>
+        dplyr::mutate(across(starts_with("freq"), .fns = ~.x*infections, .names = "{.col}_infections")) |>
         #remove unnecessary columns
-        select(days, ends_with("infections")) |>
+        select(days, name_states, starts_with("infections"), ends_with("_infections")) |>
         #removes variants with no infections (after freq <= -.0.02) and thus no frequency
         select_if(function(col) max(col) != 0) |>
-        #round infections to whole individuals 
-        dplyr::mutate(across(ends_with("infections"), ~round(.x, 0)))
+        #round infections to whole individuals
+        dplyr::mutate(across(starts_with("infections"), ~round(.x, 0)))
       
     }else{
       
@@ -106,10 +106,12 @@ infections_estimates<-function(data, daily = FALSE){
     
     ## Infections data.frame
     data_infections<- data |> 
+      ## renaming total infections to keep them
+      rename(if_else(starts_with("infections"), "infections_Total", "")) |> 
       ## Selecting columns of interest
-      select(days, ends_with("_infections")) |> 
+      select(days, starts_with("infections"), ends_with("_infections")) |> 
       #pivot longer to split by variant for estimate_R
-      pivot_longer(cols = c(ends_with("_infections")),
+      pivot_longer(cols = c(starts_with("infections"), ends_with("_infections")),
                    values_to = "I",
                    names_to = "variant") |>
       #removed because it is annoying
