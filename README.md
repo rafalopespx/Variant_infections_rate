@@ -3,7 +3,7 @@ README
 
 ## Pipeline runnig order status
 
-At 2023-05-03, the pipeline running order is:
+At 2023-05-26, the pipeline running order is:
 
 - 01_metadata_cleaning.R, to clean the metadata from GISAID and set
   variant categories, count and frequencies
@@ -24,6 +24,9 @@ At 2023-05-03, the pipeline running order is:
 
 - [ ] Organize the repo to the scripts have a more logical order
 - [ ] Calculate Rt ratios per states per variant
+- [ ] Compare them
+- [ ] Calculate incidence ratios per states per variant
+  - [ ] Compare them
 - [ ] Pairs of time of emergence to peak comparison ratio:
   - [ ] BA.1 vs. BA.2
   - [ ] BA.2 vs. XBB
