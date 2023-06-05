@@ -107,7 +107,7 @@ days_to_peak_by_frequency_ratios |>
   scale_fill_discrete(name = "VOCs")+
   facet_geo(name_states~., scales = "free_y")+
   labs(x = "Ratio Value",
-       title = "Ratio between n. of days \n from emergence to peak")+
+       title = "Ratio between n. of days \n from first emergence to peak")+
   theme_minimal()+
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
@@ -130,7 +130,7 @@ days_to_peak_by_frequency |>
   scale_fill_discrete(name = "VOCs")+
   facet_geo(name_states~., scales = "free_y")+
   labs(x = "Days to reach max. incidence", 
-       subtitle = "Days to peak \n by frequency")+
+       title = "Days from first emergence to peak")+
   theme_minimal()+
   theme(axis.text.y = element_blank(), 
         axis.title.y = element_blank(),

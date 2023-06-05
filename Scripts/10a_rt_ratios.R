@@ -221,3 +221,28 @@ avg_ratios_60_first_days |>
   facet_wrap(ratios~., nrow = 1, scales = "free", strip.position = "right")+
   tidytext::scale_y_reordered()
 
+
+## Map
+library(tigris)
+library(tidycensus)
+library(ggcart)
+
+states<-tigris::states() |> 
+  shift_geometry()
+
+states_rt_ratio<-states |> 
+  left_join(avg_ratios_30_first_days, 
+            by = c("NAME" = "name_states")) |> 
+  filter(NAME != c("Puerto Rico", "Guam"))
+
+states_rt_ratio|> 
+  ggplot()+
+  geom_sf(aes(fill = avg_median))+
+  scale_fill_binned(name = "Average Rt ratio", 
+                        label = scales::comma) + 
+  theme(legend.position = "right")+
+  theme_minimal()
+
+map_avg_ratio_30<-
+
+

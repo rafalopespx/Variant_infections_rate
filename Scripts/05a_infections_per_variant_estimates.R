@@ -60,7 +60,7 @@ infections_estimates<-function(data, daily = FALSE){
       filter(name_states == x)
     
     if(daily){
-      data <- data |> 
+      data2 <- data |> 
         # arrange by week for creating the days
         dplyr::arrange(epiweek) |> 
         # create variable for days
@@ -72,7 +72,7 @@ infections_estimates<-function(data, daily = FALSE){
                                  max(epiweek), 
                                  by = "days")) |> 
         fill(c(name_states, epiweek), .direction = "down") |> 
-        dplyr::mutate(across(where(is.numeric), ~zoo::na.spline(.x))) |> 
+        dplyr::mutate(across(where(is.numeric), ~zoo::na.approx(.x, maxgap = 6)))|> 
         # cutting off the frequencies less than 0.02, and setting as 0
         dplyr::mutate(across(starts_with("freq"), ~ifelse(.x <= 0.02, 0, .x))) |>
         #calculate variant specific number of infections
@@ -80,13 +80,13 @@ infections_estimates<-function(data, daily = FALSE){
         #remove unnecessary columns
         select(days, name_states, starts_with("infections"), ends_with("_infections")) |>
         #removes variants with no infections (after freq <= -.0.02) and thus no frequency
-        select_if(function(col) max(col) != 0) |>
+        select_if(function(col) max(col, na.rm = T) != 0) |>
         #round infections to whole individuals
-        dplyr::mutate(across(starts_with("infections"), ~round(.x, 0)))
+        dplyr::mutate(across(ends_with("infections") | starts_with("infections"), ~round(.x, 0)))
       
     }else{
       
-      data <- data |> 
+      data2 <- data |> 
         # arrange by week for creating the days
         dplyr::arrange(epiweek) |> 
         # create variable for days
@@ -98,16 +98,18 @@ infections_estimates<-function(data, daily = FALSE){
         #remove unnecessary columns
         select(days, ends_with("infections")) |>
         #removes variants with no infections (after freq <= -.0.02) and thus no frequency
-        select_if(function(col) max(col) != 0) |>
+        select_if(function(col) max(col, na.rm = T) != 0) |>
         #round infections to whole individuals 
         dplyr::mutate(across(ends_with("infections"), ~round(.x, 0)))
       
     }
     
     ## Infections data.frame
-    data_infections<- data |> 
+    data_infections<- data2 |> 
       ## renaming total infections to keep them
-      rename(if_else(starts_with("infections"), "infections_Total", "")) |> 
+      rename(infections_Total = infections, 
+             infections_p2_5_Total = infections_p2_5,
+             infections_p97_5_Total = infections_p97_5) |> 
       ## Selecting columns of interest
       select(days, starts_with("infections"), ends_with("_infections")) |> 
       #pivot longer to split by variant for estimate_R
@@ -117,6 +119,9 @@ infections_estimates<-function(data, daily = FALSE){
       #removed because it is annoying
       dplyr::mutate(variant = str_remove(variant, "freq_")) |>
       dplyr::mutate(variant = str_remove(variant, "_infections")) |>
+      dplyr::mutate(variant = str_remove(variant, "infections")) |>
+      dplyr::mutate(variant = str_remove(variant, "infections_")) |>
+      dplyr::mutate(variant = str_remove(variant, "_")) |>
       dplyr::arrange(variant) |> 
       filter(I != 0)
     
