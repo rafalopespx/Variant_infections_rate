@@ -17,6 +17,8 @@ variant_count<-variant_count |>
                           levels = c("Omicron BA.1*", "Omicron BA.2*", 
                                      "Omicron BA.3*", "Omicron BA.4*", "Omicron BA.5*", 
                                      "Omicron XBB*","Recombinant", "Other")))
+## Covidestim estimates
+covidestim_states<-vroom("Output/Tables/covidestim_estimates_states.csv.xz")
 
 # Remove plot axis
 no_axis <- theme(axis.title=element_blank(),
@@ -103,5 +105,33 @@ ggsave(plot = plt_variant_freq,
        height = 9, 
        dpi = 100)
 
+## Plotting CovidEstim states
+plt_covidestim<-covidestim_states |>
+  filter(epiweek >= "2021-09-01", epiweek <= "2023-03-01") |>  
+  ggplot(aes(x = date, y = infections, 
+             group = name_states))+
+  geom_line(alpha = .1)+
+  geom_ribbon(aes(ymin = infections_p2_5, ymax = infections_p97_5), alpha = .01)+
+  # facet_geo(name_states~., scales = "free_y")+
+  theme_minimal()+
+  theme(legend.position = "bottom", 
+        axis.text.x = element_text(angle = 90))+
+  scale_x_date(name = "Date of the end of week", 
+               date_breaks = "2 months", 
+               date_labels = "%b %Y")+
+  labs(y = "Infections Estimates \n per week", 
+       title = "CovidEstim estimates", 
+       subtitle = "per state", 
+       caption = "Source data from: covidestim.org")+
+  scale_y_continuous(labels = scales::label_scientific())
+plt_covidestim
 
+## ggsave the plots
+ggsave(plot = plt_covidestim, 
+       filename = "Output/plot_covidestim.png", 
+       width = 15, 
+       height = 9, 
+       dpi = 100)
+  
 #
+

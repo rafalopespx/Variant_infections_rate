@@ -25,7 +25,7 @@ metadata<-metadata |>
                               TRUE ~ division)) |> 
   ## Filtering out any state name that is not matching 49 contiguous states plus Alaska and Hawaii
   filter(division %in% states$name_states)
-  
+
 vroom_write(x = metadata, file = "Data/metadata_us_raw.csv.xz")
 
 metadata<-vroom("Data/metadata_us_raw.csv.xz")
@@ -93,12 +93,23 @@ variant_count<-metadata |>
   ## dummy date column
   mutate(copy_date = as.numeric(epiweek)) |> 
   ## Grouping by epiweek, state and voc_cdc
-  group_by(epiweek, division, voc_cdc) |> 
-  summarise_at(vars(copy_date), list(n = sum)) |>
+  group_by(epiweek, division, voc_cdc) |>
+  # summarise_at(vars(copy_date), list(n = sum)) |>
+  summarise(n = n()) |>
+  # summarise(n = sum(n())) |>
+  # reframe(n = n(),
+  #         .by = c("epiweek", "division", "voc_cdc")) |>
   mutate(freq = round(100*n/sum(n),1)) |> 
-  rename(name_states = division) |> 
-  ## filtering out frequencies below 0.5%, this is to help with 'data gremlins'
-  filter(freq >= 1)
+  rename(name_states = division)
+# |> 
+#   ## filtering out frequencies below 0.5%, this is to help with 'data gremlins'
+#   filter(freq >= 1)
+
+# variant_count |>
+#   ggplot(aes(x = epiweek, y = freq, fill = voc_cdc))+
+#   geom_col(width = 7)+
+#   facet_geo(name_states~.)+
+#   scale_y_continuous(labels = scales::label_scientific())
 
 ## Saving counts data
 vroom_write(x = variant_count, file = "Data/variant_counts_us.csv.xz")

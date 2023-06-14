@@ -38,9 +38,9 @@ estimates_rt_incidence<-rt_estimates |>
   ## Renaming infections
   rename(infections = I) |> 
   ## Creating incidence per 100k
-  mutate(incidence = (infections/pop)*1e5) |>
+  mutate(incidence = (infections/pop)*1e5)|>
   ## Filtering to greater incidence than 100/100k
-  filter(incidence >= 100)
+  filter(incidence >= 5)
 
 ## Rt ratios
 rt_ratios<-estimates_rt_incidence |> 
@@ -116,7 +116,13 @@ lower_ratios <- rt_ratios |>
 ## Rt ratios
 rt_ratios<-median_ratios |> 
   left_join(upper_ratios) |> 
-  left_join(lower_ratios) 
+  left_join(lower_ratios) |> 
+  filter(ratios != "XBB*/BA.2*") |> 
+  mutate(ratios = factor(droplevels(factor(ratios)), 
+                         levels = c("BA.2*/BA.1*", "BA.4*/BA.2*", "BA.5*/BA.2*", 
+                                    "BA.4*/BA.5*", "XBB*/BA.5*")))
+
+vroom_write(x = rt_ratios, file = "Output/Tables/rt_ratios.csv.xz")
 
 ## Joining the ratios
 plt_rt_ratios<-function(x){
@@ -129,13 +135,15 @@ plt_rt_ratios<-function(x){
     geom_line()+
     geom_ribbon(alpha = .15)+
     theme_minimal()+
-    labs(x = "Ratios", y = "Rt Ratios value", title = x)+
+    labs(x = "Date", y = "Rt Ratios value", title = x)+
     theme(legend.title = element_blank(), 
           legend.position = "bottom")+
     facet_wrap(ratios~., ncol = 1, strip.position = "right")+
     scale_x_date(date_breaks = "2 months",
                  date_labels = "%b %y"
-    )
+    )+
+    MetBrewer::scale_color_met_d(palette_name = "Archambault", name = "")+
+    MetBrewer::scale_fill_met_d(palette_name = "Archambault", name = "")
 }
 
 states<-unique(rt_ratios$name_states)
@@ -147,6 +155,7 @@ names(plt_rt_ratios_list)<-states
 plt_rt_ratios_list$California
 plt_rt_ratios_list$Connecticut
 plt_rt_ratios_list$`New York`
+plt_rt_ratios_list$Texas
 
 ## Function to estimate the average median, upper, lower
 avg_over_something_days<-function(x, first_something_days){
@@ -160,9 +169,9 @@ avg_over_something_days<-function(x, first_something_days){
     filter(!is.na(median)) |> 
     slice(first_something_days, 
           .by = c("name_states","ratios")) |> 
-    summarise(avg_median = mean(median, na.rm = T),
-              avg_upper = mean(upper, na.rm = T),
-              avg_lower = mean(lower, na.rm = T),
+    summarise(avg_median = ave(median, FUN = mean),
+              avg_upper = ave(upper, FUN = mean),
+              avg_lower = ave(lower, FUN = mean),
               .by = c("name_states","ratios"))
   
   return(x)
@@ -201,7 +210,9 @@ avg_ratios_30_first_days |>
   theme(legend.title = element_blank(), 
         legend.position = "bottom")+
   facet_wrap(ratios~., nrow = 1, scales = "free", strip.position = "right")+
-  tidytext::scale_y_reordered()
+  tidytext::scale_y_reordered()+
+  MetBrewer::scale_color_met_d(palette_name = "Austria", name = "")+
+  MetBrewer::scale_fill_met_d(palette_name = "Austria", name = "")
 
 avg_ratios_60_first_days |> 
   mutate(name_states2 = tidytext::reorder_within(name_states, avg_median, within = ratios)) |> 
@@ -219,30 +230,8 @@ avg_ratios_60_first_days |>
   theme(legend.title = element_blank(), 
         legend.position = "bottom")+
   facet_wrap(ratios~., nrow = 1, scales = "free", strip.position = "right")+
-  tidytext::scale_y_reordered()
+  tidytext::scale_y_reordered()+
+  MetBrewer::scale_color_met_d(palette_name = "Austria", name = "")+
+  MetBrewer::scale_fill_met_d(palette_name = "Austria", name = "")
 
-
-## Map
-library(tigris)
-library(tidycensus)
-library(ggcart)
-
-states<-tigris::states() |> 
-  shift_geometry()
-
-states_rt_ratio<-states |> 
-  left_join(avg_ratios_30_first_days, 
-            by = c("NAME" = "name_states")) |> 
-  filter(NAME != c("Puerto Rico", "Guam"))
-
-states_rt_ratio|> 
-  ggplot()+
-  geom_sf(aes(fill = avg_median))+
-  scale_fill_binned(name = "Average Rt ratio", 
-                        label = scales::comma) + 
-  theme(legend.position = "right")+
-  theme_minimal()
-
-map_avg_ratio_30<-
-
-
+#

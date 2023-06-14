@@ -27,21 +27,25 @@ variants_count_wide<-variant_count |>
               values_from = c("freq", "n")) |> 
   {\(.) {replace(.,is.na(.),0)}}() ## Trick to use replace(is.na(.), 0)
 
-## CovidEstim State-level Estimates
-url<-GET(paste('https://api2.covidestim.org/latest_runs?geo_type=eq.state&select=*%2Ctimeseries(*)'))
+# ## CovidEstim State-level Estimates
+# url<-GET(paste('https://api2.covidestim.org/latest_runs?geo_type=eq.state&select=*%2Ctimeseries(*)'))
+# 
+# covidestim_state<-fromJSON(rawToChar(url$content))
+# name_states<-covidestim_state$geo_name
+# covidestim_state<-covidestim_state[[8]]
+# names(covidestim_state)<-name_states
+# covidestim_state<-covidestim_state |> 
+#   bind_rows(.id = "name_states") |> 
+#   select(name_states, date, infections, infections_p2_5, infections_p97_5) |> 
+#   mutate(epiweek = end.of.epiweek(as.Date(date)))
 
-covidestim_state<-fromJSON(rawToChar(url$content))
-name_states<-covidestim_state$geo_name
-covidestim_state<-covidestim_state[[8]]
-names(covidestim_state)<-name_states
-covidestim_state<-covidestim_state |> 
-  bind_rows(.id = "name_states") |> 
-  select(name_states, date, infections, infections_p2_5, infections_p97_5) |> 
-  mutate(epiweek = end.of.epiweek(as.Date(date)))
+# vroom_write(x = covidestim_state, file = "Output/Tables/covidestim_estimates_states.csv.xz")
 
-## Removing heavy objects
-rm(url)
-gc()
+# ## Removing heavy objects
+# rm(url)
+# gc()
+
+covidestim_state<-vroom("Output/Tables/covidestim_estimates_states.csv.xz")
 
 ## Restriging the dates of analysis on both data-set
 estimates_variant<-covidestim_state |>
@@ -75,14 +79,14 @@ infections_estimates<-function(data, daily = FALSE){
         dplyr::mutate(across(where(is.numeric), ~zoo::na.approx(.x, maxgap = 6)))|> 
         # cutting off the frequencies less than 0.02, and setting as 0
         dplyr::mutate(across(starts_with("freq"), ~ifelse(.x <= 0.02, 0, .x))) |>
-        #calculate variant specific number of infections
-        dplyr::mutate(across(starts_with("freq"), .fns = ~.x*infections, .names = "{.col}_infections")) |>
+        #calculate variant specific number of infections, frequency is 0 to 100, not 0 to 1, has to divide by 100
+        dplyr::mutate(across(starts_with("freq"), .fns = ~.x*infections/100, .names = "{.col}_infections")) |>
         #remove unnecessary columns
-        select(days, name_states, starts_with("infections"), ends_with("_infections")) |>
+        select(days, name_states, ends_with("_infections")) |>
         #removes variants with no infections (after freq <= -.0.02) and thus no frequency
         select_if(function(col) max(col, na.rm = T) != 0) |>
         #round infections to whole individuals
-        dplyr::mutate(across(ends_with("infections") | starts_with("infections"), ~round(.x, 0)))
+        dplyr::mutate(across(ends_with("infections"), ~round(.x, 0)))
       
     }else{
       
@@ -106,28 +110,21 @@ infections_estimates<-function(data, daily = FALSE){
     
     ## Infections data.frame
     data_infections<- data2 |> 
-      ## renaming total infections to keep them
-      rename(infections_Total = infections, 
-             infections_p2_5_Total = infections_p2_5,
-             infections_p97_5_Total = infections_p97_5) |> 
       ## Selecting columns of interest
-      select(days, starts_with("infections"), ends_with("_infections")) |> 
+      select(days, name_states, ends_with("_infections")) |> 
       #pivot longer to split by variant for estimate_R
-      pivot_longer(cols = c(starts_with("infections"), ends_with("_infections")),
+      pivot_longer(cols = ends_with("_infections"),
                    values_to = "I",
                    names_to = "variant") |>
       #removed because it is annoying
       dplyr::mutate(variant = str_remove(variant, "freq_")) |>
       dplyr::mutate(variant = str_remove(variant, "_infections")) |>
-      dplyr::mutate(variant = str_remove(variant, "infections")) |>
-      dplyr::mutate(variant = str_remove(variant, "infections_")) |>
-      dplyr::mutate(variant = str_remove(variant, "_")) |>
       dplyr::arrange(variant) |> 
       filter(I != 0)
     
   })
   
-  names(data_list)<-states
+  # names(data_list)<-states
   
   return(data_list)
 }
@@ -146,7 +143,7 @@ infections_estimates<-function(data, daily = FALSE){
 ## Daily
 infections_variants_daily<-estimates_variant |> 
   infections_estimates(daily = TRUE) |> 
-  bind_rows(.id = "name_states")
+  bind_rows()
 
 vroom_write(x = infections_variants_daily, 
             file = "Data/infections_estimates_variants_daily.csv.xz")

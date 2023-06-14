@@ -18,9 +18,9 @@ rt_fun <- function(df, wallinga_teunis = FALSE){
   
   ## Completing the dates, if there is some missing
   df<-df |> 
-    complete(days = full_seq(days, period = 1)) |> 
-    fill(c(name_states, variant), .direction = "down") |> 
-    mutate(I = round(zoo::na.approx(I), 0))
+    tidyr::complete(days = full_seq(days, period = 1)) |> 
+    tidyr::fill(c(name_states, variant), .direction = "down") |> 
+    dplyr::mutate(I = round(zoo::na.approx(I), 0))
   
   #1st day with infections of variant to start the R estimate otherwise R estimate artificially high
   non0 <- min(which(df$I > 0)) 
@@ -75,9 +75,9 @@ rt_fun <- function(df, wallinga_teunis = FALSE){
                    t_start=t_start, 
                    t_end=t_end)
     
-    mean_Rt <- estimate_R(df2$I, 
-                          method="uncertain_si",
-                          config = config) 
+    mean_Rt <- EpiEstim::estimate_R(df2$I, 
+                                    method="uncertain_si",
+                                    config = config) 
     
     #adds back in days that were filtered out to match the days in the main dataframe
     mean_Rt$R$t_start <- mean_Rt$R$t_start + non0 
@@ -92,9 +92,9 @@ rt_fun <- function(df, wallinga_teunis = FALSE){
   
   #merges the Rt value with the other variant data and renames Rt to have variant suffix
   merge <- df %>%
-    arrange(days) %>% #keep in week so that the day variable lines up with the first week
-    rowid_to_column(var = "day") %>% #used to merge with the estimate_R variable output for the day
-    left_join(rt_df, by = c("day"))
+    dplyr::arrange(days) %>% #keep in week so that the day variable lines up with the first week
+    tibble::rowid_to_column(var = "day") %>% #used to merge with the estimate_R variable output for the day
+    dplyr::left_join(rt_df, by = c("day"))
   
   return(merge)
   
@@ -121,55 +121,37 @@ variants_reduced<-unique(estimates_df$variant)
 states<-unique(estimates_df$name_states)
 
 ## Cori et al. Method
-for (i in variants) {
-  for (j in states) {
-    
-    tmp <- estimates_df |> 
-      filter(variant == i, 
-             name_states == j)
-    
-    if(nrow(tmp) == 0) next
-    
-    ## Try to handle when any Rt fails and continue it 
-    rt_list[[i]][[j]]<-rt_safe(x = tmp)
-    rm(tmp)
-    gc()
-    cat("Finished state: ", j, "\n")
-  }
-  rt_list[[i]]<-bind_rows(rt_list[[i]])
-  
-  ## Prompting messages, to monitor progress
-  cat("Finished variant: ", i, "over all states \n")
-}
+# for (i in variants) {
+cores<-detectCores() - 1
+cl<-makeCluster(cores)
+clusterExport(cl, c("rt_safe", "estimates_df"))
+registerDoParallel(cl)
 
-rt_estimates<-bind_rows(rt_list)
+rt_list<-
+  foreach(i = variants, 
+          .combine = "bind_rows") %:%
+  foreach(j = states, 
+          .packages = c("dplyr", "tidyr"), 
+          .combine = "bind_rows") %dopar% {
+            
+            tmp <- estimates_df |> 
+              dplyr::filter(variant == i, 
+                            name_states == j)
+            
+            # if(nrow(tmp) == 0) next
+            
+            ## Try to handle when any Rt fails and continue it 
+            return(rt_safe(x = tmp))
+            # rm(tmp)
+            # gc()
+            # cat("Finished state: ", j, "\n")
+          }
+stopCluster(cl)
 
-vroom_write(x = rt_estimates, 
-            file = "Output/Tables/rt_estimates_cori_method_daily.tsv.xz")
-
-# ## Walling-Teunis et al. Method
-# for (i in variants_reduced) {
-#   for (j in states) {
-#     
-#     tmp <- estimates_df |> 
-#       filter(variant_reduced == i, 
-#              name_states == j)
-#     
-#     if(nrow(tmp) == 0) next
-#     
-#     ## Try to handle when any Rt fails and continue it 
-#     rt_walling_teunis[[i]][[j]]<-rt_safe(x = tmp, walling_teunis = TRUE)
-#     rm(tmp)
-#     gc()
-#     cat("Finished state: ", j, "\n")
-#   }
-#   rt_walling_teunis[[i]]<-bind_rows(rt_walling_teunis[[i]])
-#   
-#   ## Prompting messages, to monitor progress
-#   cat("Finished variant: ", i, "over all states \n")
+## Prompting messages, to monitor progress
+# cat("Finished variant: ", i, "over all states \n")
 # }
-# 
-# rt_estimates_walling_teunis<-bind_rows(rt_walling_teunis)
-# 
-# vroom_write(x = rt_walling_teunis, 
-#             file = "Output/Tables/rt_estimates_walling_teunis_method.csv.xz")
+
+vroom_write(x = rt_list, 
+            file = "Output/Tables/rt_estimates_cori_method_daily.tsv.xz")
+#

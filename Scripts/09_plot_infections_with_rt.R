@@ -33,10 +33,11 @@ estimates_rt_incidence<-rt_estimates |>
   ## Renaming infections
   rename(infections = I) |> 
   ## Creating incidence per 100k
-  mutate(incidence = (infections/pop)*1e5) |> 
-  ## Filtering to greater incidence than 100/100k
-  filter(incidence >= 100, 
-         days <= "2023-03-01")
+  mutate(incidence = (infections/pop)*1e5) 
+# |> 
+#   ## Filtering to greater incidence than 100/100k
+#   filter(incidence >= 100, 
+#          days <= "2023-03-01")
 
 ## Per states with facet per variant
 states<-unique(rt_estimates$name_states)
@@ -127,8 +128,7 @@ estimates_rt_incidence<-rt_estimates |>
   mutate(variant = droplevels(factor(variant))) |> 
   left_join(pop_states, by = c("name_states" = "state")) |> 
   rename(infections = I) |> 
-  mutate(incidence = (infections/pop)*10^5) |> 
-  filter(incidence >= 150)
+  mutate(incidence = (infections/pop)*10^5)
 
 ## Making function to plot
 plt_rt_infec<-function(data, x.title, y.title, title = NULL, sec.axis.name = NULL){
