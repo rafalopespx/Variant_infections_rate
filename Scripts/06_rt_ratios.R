@@ -60,10 +60,12 @@ median_ratios <- rt_ratios |>
   mutate(across(.cols = c(ends_with('BA.2*')), 
                 .fns = ~.x/`median_Omicron BA.1*`,
                 .names = "{.col}/BA.1*_ratio")) |> 
-  ## BA.4/BA.5 ratio
+  ## BA.5 ratios
   mutate(across(.cols = c(ends_with('BA.4*'), ends_with("XBB*")), 
                 .fns = ~.x/`median_Omicron BA.5*`,
                 .names = "{.col}/BA.5*_ratio")) |> 
+  ## BA.5*/BA.4*
+  mutate(`median_Omicron BA.5*/BA.4*_ratio` = `median_Omicron BA.5*`/`median_Omicron BA.4*`) |> 
   select(days, name_states, ends_with("_ratio")) |> 
   pivot_longer(cols = ends_with("_ratio"),
                names_to = "ratios",
@@ -85,6 +87,8 @@ upper_ratios <- rt_ratios |>
   mutate(across(.cols = c(ends_with('BA.4*'), ends_with("XBB*")), 
                 .fns = ~.x/`upper_Omicron BA.5*`,
                 .names = "{.col}/BA.5*_ratio")) |> 
+  ## BA.5*/BA.4*
+  mutate(`upper_Omicron BA.5*/BA.4*_ratio` = `upper_Omicron BA.5*`/`upper_Omicron BA.4*`) |> 
   select(days, name_states, ends_with("_ratio")) |> 
   pivot_longer(cols = ends_with("_ratio"),
                names_to = "ratios",
@@ -106,6 +110,8 @@ lower_ratios <- rt_ratios |>
   mutate(across(.cols = c(ends_with('BA.4*'), ends_with("XBB*")), 
                 .fns = ~.x/`lower_Omicron BA.5*`,
                 .names = "{.col}/BA.5*_ratio")) |> 
+  ## BA.5*/BA.4*
+  mutate(`lower_Omicron BA.5*/BA.4*_ratio` = `lower_Omicron BA.5*`/`lower_Omicron BA.4*`) |> 
   select(days, name_states, ends_with("_ratio")) |> 
   pivot_longer(cols = ends_with("_ratio"),
                names_to = "ratios",
@@ -116,11 +122,12 @@ lower_ratios <- rt_ratios |>
 ## Rt ratios
 rt_ratios<-median_ratios |> 
   left_join(upper_ratios) |> 
-  left_join(lower_ratios) |> 
-  filter(ratios != "XBB*/BA.2*") |> 
-  mutate(ratios = factor(droplevels(factor(ratios)), 
-                         levels = c("BA.2*/BA.1*", "BA.4*/BA.2*", "BA.5*/BA.2*", 
-                                    "BA.4*/BA.5*", "XBB*/BA.5*")))
+  left_join(lower_ratios) 
+# |> 
+#   filter(ratios != "XBB*/BA.2*", ratios != "BA.4*/BA.5*") |> 
+#   mutate(ratios = factor(droplevels(factor(ratios)), 
+#                          levels = c("BA.2*/BA.1*", "BA.4*/BA.2*", "BA.5*/BA.2*", 
+#                                     "BA.5*/BA.4*", "XBB*/BA.5*")))
 
 vroom_write(x = rt_ratios, file = "Output/Tables/rt_ratios.csv.xz")
 
@@ -142,8 +149,8 @@ plt_rt_ratios<-function(x){
     scale_x_date(date_breaks = "2 months",
                  date_labels = "%b %y"
     )+
-    MetBrewer::scale_color_met_d(palette_name = "Archambault", name = "")+
-    MetBrewer::scale_fill_met_d(palette_name = "Archambault", name = "")
+    MetBrewer::scale_color_met_d(palette_name = "Austria", name = "", direction = -1)+
+    MetBrewer::scale_fill_met_d(palette_name = "Austria", name = "", direction = -1)
 }
 
 states<-unique(rt_ratios$name_states)
@@ -211,8 +218,8 @@ avg_ratios_30_first_days |>
         legend.position = "bottom")+
   facet_wrap(ratios~., nrow = 1, scales = "free", strip.position = "right")+
   tidytext::scale_y_reordered()+
-  MetBrewer::scale_color_met_d(palette_name = "Austria", name = "")+
-  MetBrewer::scale_fill_met_d(palette_name = "Austria", name = "")
+  MetBrewer::scale_color_met_d(palette_name = "Austria", name = "", direction = -1)+
+  MetBrewer::scale_fill_met_d(palette_name = "Austria", name = "", direction = -1)
 
 avg_ratios_60_first_days |> 
   mutate(name_states2 = tidytext::reorder_within(name_states, avg_median, within = ratios)) |> 
@@ -231,7 +238,7 @@ avg_ratios_60_first_days |>
         legend.position = "bottom")+
   facet_wrap(ratios~., nrow = 1, scales = "free", strip.position = "right")+
   tidytext::scale_y_reordered()+
-  MetBrewer::scale_color_met_d(palette_name = "Austria", name = "")+
-  MetBrewer::scale_fill_met_d(palette_name = "Austria", name = "")
+  MetBrewer::scale_color_met_d(palette_name = "Austria", name = "", direction = -1)+
+  MetBrewer::scale_fill_met_d(palette_name = "Austria", name = "", direction = -1)
 
 #
