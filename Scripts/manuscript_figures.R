@@ -3,7 +3,7 @@ rm(list = ls())
 gc()
 
 ## Loading Libraries
-packs = c("tidyverse", "vroom", "patchwork", "geofacet")
+packs = c("tidyverse", "vroom", "patchwork", "geofacet", "tigris", "ggforce", "ggthemes", "MetBrewer", "ggrepel", "gghighlight")
 lapply(packs,require, character.only = TRUE)
 
 ## Loading functions
@@ -75,7 +75,9 @@ figure1a<-figure1a_data |>
   labs(x = NULL, y = "Infections per days")+
   theme_minimal()+
   theme(legend.position = "bottom", 
-        axis.text.x = element_blank())+
+        axis.text.x = element_blank(), 
+        axis.title.y.right = element_text(color = "firebrick1"),
+        axis.text.y.right = element_text(colour = "firebrick1"))+
   scale_x_date(date_breaks = "2 months", date_labels = "%b %y")+
   scale_y_continuous(labels = scales::label_scientific(), 
                      sec.axis = sec_axis(~./scaleFactor, name = "Infections per day \n Whole country"))+
@@ -118,12 +120,15 @@ figure1b <- figure1b_data |>
             inherit.aes = F)+
   theme_minimal()+
   facet_wrap(variant~., ncol = 1, scales = "free_y", strip.position = "top")+
-  theme(legend.position = "none")+
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank(), 
+        axis.title.y.right = element_text(color = "firebrick1"),
+        axis.text.y.right = element_text(colour = "firebrick1"))+
   labs(x = "Date", y = "Infections per day")+
   scale_x_date(date_breaks = "2 months", date_labels = "%b %y")+
   scale_y_continuous(labels = scales::label_scientific(), 
-                     sec.axis = sec_axis(~./scaleFactor, name = "Infections per day \n Whole country"))+
-  scale_color_manual(values = c("firebrick1", MetBrewer::met.brewer(palette_name = "Archambault")))
+                     sec.axis = sec_axis(~./scaleFactor, name = "Infections per day \n Whole country", ))+
+  scale_color_manual(values = c("firebrick1", MetBrewer::met.brewer(palette_name = "Archambault", type = "discrete", n = 5)))
 figure1b
 
 ggsave(filename = "Output/Plots/figure1b_manuscript.png", 
@@ -169,7 +174,7 @@ figure2a_data<-estimates_rt_incidence |>
   left_join(pop_states, by = c("name_states" = "state")) |> 
   mutate(attack_rate = round((total_infections/pop)*100, 0))
 
-scaleFactor<-max(figure2a_data$total_incidence, na.rm = T)/max(figura2a_data$attack_rate)
+scaleFactor<-max(figure2a_data$total_incidence, na.rm = T)/max(figure2a_data$attack_rate)
 
 figure2a<- figure2a_data |> 
   ggplot(aes(x = variant, 
@@ -179,16 +184,22 @@ figure2a<- figure2a_data |>
   geom_point(position = position_jitterdodge(jitter.width = .9))+
   geom_point(aes(y = attack_rate*scaleFactor))+
   geom_text(data = figure2a_data |> 
-                    filter(total_incidence == max(total_incidence, na.rm = T), 
-                           .by = c(variant)),
-                  aes(label = `State Code`), 
-            vjust = -0.5)+
+              filter(total_incidence == max(total_incidence, na.rm = T),
+                     .by = c(variant)),
+            aes(label = `State Code`), 
+            vjust = -1.5)+
+  geom_text(data = figure2a_data |> 
+              filter(total_incidence == min(total_incidence, na.rm = T),
+                     .by = c(variant)),
+            aes(label = `State Code`), 
+            vjust = 2)+
   theme_minimal()+
   MetBrewer::scale_color_met_d(palette_name = "Archambault", name = "")+
   theme(legend.position = "none")+
   labs(x = "", y = "Incidence \n infections/100K")+
   scale_y_continuous(labels = scales::label_scientific(), 
-                     sec.axis = sec_axis(~./scaleFactor, name = "Attack Rate \n (%) of pop. ever infected"))
+                     sec.axis = sec_axis(~./scaleFactor, 
+                                         name = "Attack Rate \n (%) of pop. ever infected"))
 figure2a
 
 ggsave(filename = "Output/Plots/figure2a_manuscript.png", 
@@ -264,7 +275,7 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/fi
        dpi = 100)
 
 usmap<-tigris::states(cb = TRUE) |> 
-  shift_geometry()
+  tigris::shift_geometry()
 
 map_attackrate<-usmap |> 
   left_join(figure2_data, 
@@ -289,7 +300,7 @@ attack_rate_map<-function(x){
     geom_sf(aes(fill = attack_rate_binned), 
             color = "grey50", 
             lwd = .1)+
-    theme_void()+
+    theme_map()+
     scale_fill_manual(values = met.brewer(palette_name = "Hiroshige", 
                                           n = 13, 
                                           type = "continuous", 
@@ -312,9 +323,9 @@ variants<- as.character(unique(map_attackrate$variant))
 map_list<-lapply(variants, attack_rate_map)
 
 patchwork_map<-((((map_list[[1]] / map_list[[4]]) | (map_list[[2]]/ map_list[[3]] / map_list[[5]]))+
-                     plot_annotation(tag_levels = 'a')+
-                     plot_layout(guides = "collect")&
-                     theme(legend.position = "bottom")))+
+                   plot_annotation(tag_levels = 'a')+
+                   plot_layout(guides = "collect")&
+                   theme(legend.position = "bottom")))+
   plot_annotation(tag_levels = 'A')
 patchwork_map
 
@@ -331,10 +342,10 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/fi
        dpi = 100)
 
 patchwork_figure2<-((figure2a + theme(legend.position = "none")) | 
-                  (((map_list[[1]] / map_list[[4]]) | (map_list[[2]]/ map_list[[3]] / map_list[[5]]))+
-                     plot_annotation(tag_levels = 'a')+
-                     plot_layout(guides = "collect")&
-                     theme(legend.position = "bottom")))+
+                      (((map_list[[1]] / map_list[[4]]) | (map_list[[2]]/ map_list[[3]] / map_list[[5]]))+
+                         plot_annotation(tag_levels = 'a')+
+                         plot_layout(guides = "collect")&
+                         theme(legend.position = "bottom")))+
   plot_annotation(tag_levels = 'A')
 patchwork_figure2
 
@@ -351,30 +362,34 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/fi
        dpi = 100)
 
 figure3_data<- estimates_rt_incidence |> 
-  filter(incidence >= 15) |>
+  # filter(incidence >= 15) |>
   reframe(median = mean(Rt, na.rm = T),
           lower = mean(lower, na.rm = T),
           upper = mean(upper, na.rm = T),
           .by = c(days, variant))
 
 figure3<- estimates_rt_incidence |> 
-  filter(incidence > 5) |> 
+  # filter(incidence > 5) |> 
   ggplot(aes(x = days, y = Rt, 
              ymin = lower, ymax = upper,
-             col = variant, fill = variant,
+             fill = variant,
              group = name_states))+
   geom_hline(yintercept = 1, show.legend = F, col = "grey9")+
-  geom_smooth(alpha = .1, lwd = .1, method = "loess")+
-  geom_smooth(data = figure3_data, 
-            aes(x = days, y = median, 
-                col = "National average"),
-            inherit.aes = F, 
-            alpha = .1, lwd = .3, method = "loess")+
+  # geom_line(aes(col = variant),alpha = .1)+
+  # geom_ribbon(aes(fill = variant),
+  #             alpha = .01)+
+  geom_smooth(aes(col = variant, filll = variant),
+              alpha = .1, lwd = .1, method = "loess")+
+  geom_smooth(data = figure3_data,
+              aes(x = days, y = median,
+                  col = "National average"),
+              inherit.aes = F,
+              alpha = .1, lwd = .3, method = "loess")+
   theme_minimal()+
   labs(x = "Date", y = "Effective Reproduction \n (Rt)")+
   theme(legend.title = element_blank(), 
         legend.position = "bottom")+
-  facet_wrap(variant~., ncol = 1, strip.position = "right")+
+  facet_wrap(variant~., ncol = 1, strip.position = "right", scales = "free_y")+
   scale_x_date(date_breaks = "2 months",
                date_labels = "%b %y"
   )+
@@ -417,16 +432,28 @@ figure4a <- figure4a_data |>
              ymin = lower, ymax = upper,
              color = ratios, fill = ratios))+
   geom_hline(yintercept = 1, show.legend = F, col = "grey9")+
-  geom_pointrange(fatten = .15, alpha = .2, show.legend = F)+
+  geom_line()+
+  geom_ribbon(alpha = .1)+
   theme_minimal()+
-  facet_wrap(ratios~., ncol = 1, scales = "free_y")+
-  theme(legend.position = "bottom", 
-        strip.text.x = element_blank())+
+  facet_wrap(ratios~., ncol = 1, scales = "fixed", strip.position = "right")+
+  theme(legend.position = "none")+
   scale_x_date(date_breaks = "2 months", date_labels = "%b %y")+
   labs(y = "Average (Rt) ratio", x = "Date")+
-  MetBrewer::scale_color_met_d(palette_name = "Isfahan1", name = "", direction = -1)+
-  MetBrewer::scale_fill_met_d(palette_name = "Isfahan1", name = "", direction = -1)
+  MetBrewer::scale_color_met_d(palette_name = "Johnson", name = "", direction = -1)+
+  MetBrewer::scale_fill_met_d(palette_name = "Johnson", name = "", direction = -1)
 figure4a
+
+ggsave(filename = "Output/Plots/figure4a_manuscript.png", 
+       plot = figure4a, 
+       width = 11, 
+       height = 9, 
+       dpi = 100)
+
+ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/figure4a_manuscript.pdf", 
+       plot = figure4a, 
+       width = 11,
+       height = 9, 
+       dpi = 100)
 
 figure4b_data <- rt_ratio |> 
   reframe(median = mean(median, na.rm = T),
@@ -436,29 +463,133 @@ figure4b_data <- rt_ratio |>
   mutate(name_states2 = tidytext::reorder_within(name_states, median, within = ratios))
 
 figure4b <- figure4b_data |> 
-  mutate(ratios = factor(ratios, 
-                         levels = rev(c("BA.2*/BA.1*", "BA.4*/BA.2*", "BA.5*/BA.2*", "BA.5*/BA.4*", 
-                                    "XBB*/BA.5*")))) |> 
-  ggplot(aes(x = median, xmin = lower, xmax = upper, 
-             y = ratios, 
+  # mutate(ratios = factor(ratios, 
+  #                        levels = rev(c("BA.2*/BA.1*", "BA.4*/BA.2*", "BA.5*/BA.2*", "BA.5*/BA.4*", 
+  #                                       "XBB*/BA.5*")))) |> 
+  ggplot(aes(y = median, ymin = lower, ymax = upper, 
+             x = ratios, 
              col = ratios))+
-  geom_vline(xintercept = 1, show.legend = F, col = "grey9")+
-  geom_boxplot()+
-  geom_point(position = position_jitterdodge())+
+  geom_hline(yintercept = 1, show.legend = F, col = "grey9")+
+  geom_boxplot(show.legend = F)+
+  geom_point(position = position_dodge2(width = .1))+
   theme_minimal()+
   theme(legend.title = element_blank(), 
-        legend.position = "bottom",
+        legend.position = "none",
         axis.text.y = element_blank())+
   # facet_col(ratios~., shrink = T, space = F)+
-  MetBrewer::scale_color_met_d(palette_name = "Isfahan1", name = "", direction = 1)+
-  MetBrewer::scale_fill_met_d(palette_name = "Isfahan1", name = "", direction = 1)+
+  MetBrewer::scale_color_met_d(palette_name = "Johnson", name = "", direction = -1)+
+  MetBrewer::scale_fill_met_d(palette_name = "Johnson", name = "", direction = -1)+
   labs(x = 'Average (Rt) ratio', y = '')
 figure4b
 
-patchwork_figure4 <- (figure4a | figure4b)+
-  plot_annotation(tag_levels = 'A')+
-  plot_layout(guides = 'collect')&
+ggsave(filename = "Output/Plots/figure4b_manuscript.png", 
+       plot = figure4b, 
+       width = 11, 
+       height = 9, 
+       dpi = 100)
+
+ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/figure4b_manuscript.pdf", 
+       plot = figure4b, 
+       width = 11,
+       height = 9, 
+       dpi = 100)
+
+figure4c_data <- rt_ratio |> 
+  reframe(median = mean(median, na.rm = T),
+          lower = mean(lower, na.rm = T),
+          upper = mean(upper, na.rm = T), 
+          .by = c("name_states", "ratios")) |> 
+  left_join(states_abb, by = c("name_states" = "State"))
+
+figure4c <- figure4c_data |> 
+  ggplot(aes(x = ratios, y = median, group = `State Code`)) +
+  geom_hline(yintercept = 1, show.legend = F, col = "grey9")+
+  geom_line(aes(color = ratios), alpha = .5, size = 1, show.legend = F) +
+  geom_point(aes(color = ratios), alpha = .5, size = 5, show.legend = T) +
+  geom_text_repel(data = figure4c_data %>%
+                    filter(ratios == "BA.2*/BA.1*"
+                           ,
+                           `State Code` %in% c("NY", "CA", "CT", "KY", "SD", "DE", "MA", "ID")
+                    ),
+                  aes(label = `State Code`) ,
+                  hjust = "left",
+                  fontface = "bold",
+                  size = 3,
+                  nudge_x = -.45,
+                  direction = "y",
+                  show.legend = F) +
+  geom_text_repel(data = figure4c_data %>%
+                    filter(ratios == "XBB*/BA.5*"
+                           ,
+                           `State Code` %in% c("NY", "CA", "CT", "KY", "SD", "DE", "MA", "ID")
+                    ),
+                  aes(label = `State Code`) ,
+                  hjust = "right",
+                  fontface = "bold",
+                  size = 3,
+                  nudge_x = .5,
+                  direction = "y",
+                  show.legend = F) +
+  # geom_label(aes(label = round(median, 2)),
+  #            size = 2.5,
+  #            # vjust = -0.5,
+  #            label.padding = unit(0.05, "lines"),
+  #            label.size = 0.0,
+  #            show.legend = F)+
+  MetBrewer::scale_color_met_d(palette_name = "Johnson", name = "", direction = -1)+
+  MetBrewer::scale_fill_met_d(palette_name = "Johnson", name = "", direction = -1)+
+  theme_minimal()+
+  labs(x = "Ratios",
+       y = "Average (Rt) ratio")+
+  theme(legend.title = element_blank(),
+        legend.position = "bottom")
+figure4c <- figure4c + 
+  gghighlight(`State Code` %in% c("NY", "CA", "CT", "KY", "SD", "DE", "MA", "ID"),
+              use_direct_label = F)
+figure4c
+
+ggsave(filename = "Output/Plots/figure4c_manuscript.png", 
+       plot = figure4c, 
+       width = 11, 
+       height = 9, 
+       dpi = 100)
+
+ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/figure4c_manuscript.pdf", 
+       plot = figure4c, 
+       width = 11,
+       height = 9, 
+       dpi = 100)
+
+figure4d<- figure4c_data |> 
+  ggplot(aes(x = ratios, y = `State Code`)) +
+  geom_tile(aes(fill = round(median, 1)))+
+  MetBrewer::scale_fill_met_c(palette_name = "Demuth", name = "", direction = -1, 
+                              guide = guide_bins(keywidth = grid::unit(1.5, "cm"),
+                                                 title.position = "top", 
+                                                 title.hjust = .5,
+                                                 show.limits = T, 
+                                                 title = "Average (Rt) ratio"))+
+  theme_minimal()+
+  labs(x = "Ratios",
+       y = "State")+
   theme(legend.position = "bottom")
+figure4d
+
+ggsave(filename = "Output/Plots/figure4d_manuscript.png", 
+       plot = figure4d, 
+       width = 11, 
+       height = 9, 
+       dpi = 100)
+
+ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/figure4d_manuscript.pdf", 
+       plot = figure4d, 
+       width = 11,
+       height = 9, 
+       dpi = 100)
+
+patchwork_figure4 <- ((figure4a + figure4b) / 
+                        (figure4c))+
+  plot_annotation(tag_levels = 'A')
 patchwork_figure4
 
 ggsave(filename = "Output/Plots/figure4_manuscript.png", 
@@ -469,6 +600,41 @@ ggsave(filename = "Output/Plots/figure4_manuscript.png",
 
 ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/figure4_manuscript.pdf", 
        plot = patchwork_figure4, 
+       width = 11,
+       height = 9, 
+       dpi = 100)
+
+figureS2 <- figure4c_data |> 
+  ggplot(aes(x = ratios, y = median, group = `State Code`)) +
+  geom_hline(yintercept = 1, show.legend = F, col = "grey9")+
+  geom_line(aes(color = ratios), alpha = .5, size = 1, show.legend = F) +
+  geom_point(aes(color = ratios), alpha = .5, size = 5, show.legend = T) +
+  # geom_label(aes(label = round(median, 2)),
+  #            size = 2.5,
+  #            # vjust = -0.5,
+  #            label.padding = unit(0.05, "lines"),
+  #            label.size = 0.0,
+  #            show.legend = F)+
+  MetBrewer::scale_color_met_d(palette_name = "Johnson", name = "", direction = -1)+
+  MetBrewer::scale_fill_met_d(palette_name = "Johnson", name = "", direction = -1)+
+  theme_minimal()+
+  lims(y = c(NA, 1.7))+
+  labs(x = "Ratios",
+       y = "Average (Rt) ratio")+
+  theme(legend.title = element_blank(),
+        legend.position = "bottom", 
+        axis.text.x = element_text(angle = 90))+
+  facet_geo(`State Code`~.)
+figureS2
+
+ggsave(filename = "Output/Plots/figureS2_manuscript.png", 
+       plot = figureS2, 
+       width = 11, 
+       height = 9, 
+       dpi = 100)
+
+ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/figureS2_manuscript.pdf", 
+       plot = figureS2, 
        width = 11,
        height = 9, 
        dpi = 100)

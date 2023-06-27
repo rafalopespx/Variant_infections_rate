@@ -10,21 +10,24 @@ lapply(packs, require, character.only = TRUE)
 source("Scripts/Functions/functions.R")
 
 ## Loading the metadata and states
-metadata<-vroom("Data/metadata/metadata_2023-04-09_23-54.tsv.gz")
+metadata<-vroom("Data/metadata/metadata_2023-05-02_00-29.tsv.gz")
 
 ## States abbreviation
 states<-vroom("Data/state_abbreviation.tsv")
 
-## Filtering for the US, human only infections, and formatting date
 metadata<-metadata |> 
+  ## Filtering for the US, human only infections
   filter(country == "USA", 
          host == "Human") |> 
+  ## Formatting date
   mutate(date = as.Date(date, "%Y-%m-%d"), 
          ## Fixing DC
          division = case_when(division == "Washington DC" ~ "District of Columbia", 
                               TRUE ~ division)) |> 
   ## Filtering out any state name that is not matching 49 contiguous states plus Alaska and Hawaii
-  filter(division %in% states$name_states)
+  filter(division %in% states$name_states) |> 
+  ## Filtering out any sequence that is submitted long time after its collection, data-gremlins avoidance
+  filter((date_submitted - date) < 90)
 
 vroom_write(x = metadata, file = "Data/metadata_us_raw.csv.xz")
 
@@ -73,11 +76,6 @@ metadata <- metadata |>
   complete(date, nesting(voc_cdc), fill = list(copy_date = 0)) |> 
   ## Putting date at the ending date of the epiweek
   mutate(epiweek = end.of.epiweek(date))
-
-## Talvez tentar inverte a forma de como realizar a classifição, 
-# fazer uma primeira estimativa de frequências nas pango lineages, e 
-# filtrar somente aquelas linhagens que tem mais de 0.1% de frequencia, 
-# com essas linhas realizar a estimativa de infecções
 
 ## Saving as compressed file
 vroom_write(x = metadata, 

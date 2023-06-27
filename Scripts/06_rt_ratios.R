@@ -38,9 +38,10 @@ estimates_rt_incidence<-rt_estimates |>
   ## Renaming infections
   rename(infections = I) |> 
   ## Creating incidence per 100k
-  mutate(incidence = (infections/pop)*1e5)|>
-  ## Filtering to greater incidence than 100/100k
-  filter(incidence >= 5)
+  mutate(incidence = (infections/pop)*1e5)
+# |>
+#   ## Filtering to greater incidence than 100/100k
+#   filter(incidence >= 5)
 
 ## Rt ratios
 rt_ratios<-estimates_rt_incidence |> 
