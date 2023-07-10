@@ -11,8 +11,8 @@ graph [layout = dot, rankdir = LR, label = '',labelloc = t]
 node [shape = rectangle, style = filled, fillcolor = Bisque, fontname = 'Helvetica']
 
 # label nodes
-data1 [label = 'GISAID\n US genome sequences \n metadata', shape = folder, fillcolor = PaleGreen]
-data2 [label = 'covidestim\n State infections \n estimates', shape = folder, fillcolor = PaleGreen]
+data1 [label = 'GISAID\n US genome sequences \n metadata', shape = database, fillcolor = PaleGreen]
+data2 [label = 'covidestim\n State infections \n estimates', shape = database, fillcolor = PaleGreen]
 process [label =  'Omicron* \n Variants. infections \n estimates']
 statistical [label = 'effective reproduction number (Rt) \n estimates']
 results [label= 'Results \n - Attack Rate \n - Incidence \n - (Rt)']
@@ -23,6 +23,8 @@ metaanalysis [label = 'Meta-analysis \n Explanatory variables to variability on 
 statistical -> {results metaanalysis}
 metaanalysis -> results
 }")
+
+flowchart_lr
 
 flowchart_lr |> 
   export_svg() |> 
@@ -43,7 +45,7 @@ graph [layout = dot, rankdir = TB, label = '',labelloc = t]
 node [shape = rectangle, style = filled, fillcolor = Bisque, fontname = 'Helvetica']
 
 # label nodes
-data1 [label = 'GISAID\n US genome sequences \n metadata', shape = folder, fillcolor = PaleGreen]
+data1 [label = 'GISAID\n US genome sequences \n metadata', shape = dataset, fillcolor = PaleGreen]
 data2 [label = 'covidestim\n State infections \n estimates', shape = folder, fillcolor = PaleGreen]
 process [label =  'Omicron* \n Variants infections \n estimates']
 statistical [label = 'effective reproduction number (Rt) \n estimates']
@@ -55,6 +57,8 @@ metaanalysis [label = 'Meta-analysis \n on (Rt) values']
 statistical -> {results metaanalysis}
 metaanalysis -> results
 }")
+
+flowchart_tb
 
 flowchart_tb |> 
   export_svg() |> 

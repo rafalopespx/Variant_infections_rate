@@ -16,7 +16,6 @@ rt_estimates<-vroom("Output/Tables/rt_estimates_cori_method_daily.tsv.xz")|>
   mutate(variant = factor(variant,
                           levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*",
                                      "Omicron XBB*")))
-
 ## Population by states
 pop_states<-vroom("https://raw.githubusercontent.com/covidestim/covidestim-sources/master/data-sources/statepop.csv")
 
@@ -29,7 +28,6 @@ variant_count<-vroom("Data/variant_counts_us.csv.xz") |>
   mutate(variant = factor(variant,
                           levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*",
                                      "Omicron XBB*")))
-
 ## Joining Rt with variant counts
 estimates_rt_incidence<-rt_estimates |>
   left_join(variant_count) |>

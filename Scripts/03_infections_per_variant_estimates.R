@@ -34,9 +34,9 @@ variants_count_wide<-variant_count |>
 # name_states<-covidestim_state$geo_name
 # covidestim_state<-covidestim_state[[8]]
 # names(covidestim_state)<-name_states
-# covidestim_state<-covidestim_state |> 
-#   bind_rows(.id = "name_states") |> 
-#   select(name_states, date, infections, infections_p2_5, infections_p97_5) |> 
+# covidestim_state<-covidestim_state |>
+#   bind_rows(.id = "name_states") |>
+#   select(name_states, date, infections, infections_p2_5, infections_p97_5) |>
 #   mutate(epiweek = end.of.epiweek(as.Date(date)))
 
 # vroom_write(x = covidestim_state, file = "Output/Tables/covidestim_estimates_states.csv.xz")
