@@ -762,7 +762,7 @@ ggplot(df, aes(x = x,
         plot.title = element_text(hjust = .5))
 
 
-df<-figure4c_da |> 
+df<-figure4c_data |> 
   reframe(median = round(mean(median, na.rm = T),2), 
           .by = c(,Region, Division, state_code, ratios))
 
