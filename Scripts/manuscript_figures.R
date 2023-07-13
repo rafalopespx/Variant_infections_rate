@@ -6,7 +6,7 @@ gc()
 packs = c("tidyverse", "vroom", "patchwork", "geofacet", "tigris", "ggforce", "ggthemes", "MetBrewer", "ggrepel", "gghighlight")
 lapply(packs,require, character.only = TRUE)
 
-## Loading functions
+# Loading functions
 source("Scripts/Functions/functions.R")
 
 ## Loading the estimates
@@ -733,7 +733,6 @@ figureS1d <- estimates_rt_incidence |>
   theme(axis.text.x = element_text(angle = 90))
 figureS1d
 
-
 library(ggsankey)
 
 df<- figure4c_data |> 
@@ -747,36 +746,36 @@ df<- figure4c_data |>
 # df<- df |> 
 #   make_long(`BA.2*/BA.1*`, `BA.4*/BA.2*`, `BA.5*/BA.2*`, `BA.5*/BA.4*`, `XBB*/BA.5*`) 
 
-ggplot(df, aes(x = x, 
-               next_x = next_x, 
-               node = node, 
-               next_node = next_node, 
-               fill = factor(node), 
-               label = node)) +
-  geom_sankey_bump(flow.alpha = .6) +
-  geom_sankey_text(size = 3, color = "white") +
-  scale_fill_met_d(palette_name = "Morgenstern") +
-  theme_alluvial(base_size = 18) +
-  labs(x = NULL) +
-  theme(legend.position = "none",
-        plot.title = element_text(hjust = .5))
+# ggplot(df, aes(x = x, 
+#                next_x = next_x, 
+#                node = node, 
+#                next_node = next_node, 
+#                fill = factor(node), 
+#                label = node)) +
+#   geom_sankey_bump(flow.alpha = .6) +
+#   geom_sankey_text(size = 3, color = "white") +
+#   scale_fill_met_d(palette_name = "Morgenstern") +
+#   theme_alluvial(base_size = 18) +
+#   labs(x = NULL) +
+#   theme(legend.position = "none",
+#         plot.title = element_text(hjust = .5))
 
-
-df<-figure4c_data |> 
-  reframe(median = round(mean(median, na.rm = T),2), 
-          .by = c(,Region, Division, state_code, ratios))
-
-df |> 
-  ggplot(aes(x = ratios,
-             node = Region,
-             fill = Region,
-             value = median/51)) +
-  geom_sankey_bump(space = 0, type = "alluvial", color = "transparent", smooth = 6) +
-  # geom_sankey_text(aes(label = state_code))+
-  scale_fill_viridis_d(option = "A", alpha = .8) +
-  theme_sankey_bump(base_size = 16) +
-  # labs(x = NULL,
-  #      # y = "GDP ($ bn)",
-  #      # fill = NULL,
-  #      color = NULL) +
-  theme(legend.position = "none")
+# df<-rt_ratio |> 
+#   reframe(median = mean(median, na.rm = F), 
+#           .by = c(days, name_states, ratios)) |> 
+#   left_join(states_abb, by = c("name_states" = "State")) |> 
+#   rename(state_code = `State Code`)
+# 
+# ggplot(data = df, 
+#        aes(x = ratios, 
+#            node = state_code, 
+#            fill = Region, 
+#            value = median))+
+#   geom_sankey_bump(space = 0, type = "alluvial", color = "transparent", smooth = 6) +
+#   scale_fill_met_d(palette_name = "Hiroshige")+
+#   theme_sankey_bump(base_size = 16) +
+#   labs(x = NULL,
+#        # y = "GDP ($ bn)",
+#        fill = NULL,
+#        color = NULL) +
+#   theme(legend.position = "bottom")
