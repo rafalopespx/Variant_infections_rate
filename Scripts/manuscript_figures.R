@@ -40,6 +40,10 @@ estimates_rt_incidence<-rt_estimates |>
   ## Creating incidence per 100k
   mutate(incidence = (infections/pop)*1e5, 
          percentual_incidence = round(incidence/pop, 2))
+
+vroom_write(x = estimates_rt_incidence, 
+            file = "Data/state_full_data.csv.xz")
+  
 # |>
 #   ## Filtering to greater incidence than 100/100k
 #   filter(incidence >= 100)
@@ -172,6 +176,9 @@ figure2a_data<-estimates_rt_incidence |>
                          levels = c("West", "Midwest", "South", "Northeast"))) |> 
   left_join(pop_states, by = c("name_states" = "state")) |> 
   mutate(attack_rate = round((total_infections/pop)*100, 0))
+
+vroom_write(x = figure2a_data, 
+            file = "Data/state_attack_rate_variants.csv.xz")
 
 scaleFactor<-max(figure2a_data$total_incidence, na.rm = T)/max(figure2a_data$attack_rate)
 
@@ -375,18 +382,18 @@ figure3_data_national<- estimates_rt_incidence |>
 
 figure3<- figure3_data |> 
   # filter(incidence > 5) |> 
-  ggplot(aes(x = days, y = log10(median), 
-             ymin = log10(lower), ymax = log10(upper),
+  ggplot(aes(x = days, y = median, 
+             ymin = lower, ymax = upper,
              fill = variant,
              group = name_states))+
-  geom_hline(yintercept = 0, show.legend = F, col = "grey9")+
+  # geom_hline(yintercept = 1, show.legend = F, col = "grey9")+
   # geom_line(aes(col = variant),alpha = .1)+
   # geom_ribbon(aes(fill = variant),
   #             alpha = .01)+
-  geom_smooth(aes(col = variant, filll = variant),
+  geom_smooth(aes(col = variant, fill = variant),
               alpha = .1, lwd = .1, method = "loess")+
   geom_smooth(data = figure3_data_national,
-              aes(x = days, y = log10(median),
+              aes(x = days, y = median,
                   col = "National average"),
               inherit.aes = F,
               alpha = .1, lwd = .3, method = "loess")+
@@ -400,7 +407,8 @@ figure3<- figure3_data |>
   )+
   scale_fill_manual(values = c("firebrick3",
                                met.brewer(palette_name = "Archambault", type = "discrete", n = 5)),
-                    aesthetics = c("color", "fill"))
+                    aesthetics = c("color", "fill"))+
+  scale_y_log10()
 figure3
 
 ggsave(filename = "Output/Plots/figure3_manuscript.png", 
@@ -733,12 +741,12 @@ figureS1d <- estimates_rt_incidence |>
   theme(axis.text.x = element_text(angle = 90))
 figureS1d
 
-library(ggsankey)
-
-df<- figure4c_data |> 
-  mutate(state_code = `State Code`) |> 
-  select(state_code, ratios, median, Region, Division) |>
-  mutate(median = round(median, 2)) 
+# library(ggsankey)
+# 
+# df<- figure4c_data |> 
+#   mutate(state_code = `State Code`) |> 
+#   select(state_code, ratios, median, Region, Division) |>
+#   mutate(median = round(median, 2)) 
 
 # |> 
 #   pivot_wider(id_cols = "state_code", names_from = "ratios", values_from = "median") 
