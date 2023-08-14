@@ -3,52 +3,38 @@ rm(list = ls())
 gc()
 
 ## Loading Libraries
-packs = c("tidyverse", "vroom", "MASS", "ggeffects", "marginaleffects", "broom.helpers")
+packs = c("tidyverse", "vroom", "MASS", "ggeffects", "marginaleffects", "broom.helpers", "sf", "tidycensus", "tidyverse")
 lapply(packs,require, character.only = TRUE)
 
 # Loading functions
 source("Scripts/Functions/functions.R")
+source("Scripts/get_svi.R")
 
 ## Loading data sources
 states_fulldata<-vroom("Data/state_full_data.csv.xz")
 
 states_attack_rates<-vroom("Data/state_attack_rate_variants.csv.xz")
 
-states_household<-vroom("Data/household_income_size_states.csv")
+## SVI variable vector of all states
+us <- unique(fips_codes$state)[1:51]
+acs_year <- 2020
+geo_unit <- "state"
+svi_df_raw <- map_df(us, function(x) {
+  get_svi(geo_unit, acs_year, x)
+}) 
+svi_df_raw<-svi_df_raw|> 
+  select(GEOID, name_states, geometry, starts_with("EP_"))
 
-states_immunity<-vroom("Data/immunity-weekly-state.csv.xz")
+## Joining data streams
+states_full_model<-left_join(states_attack_rates, svi_df_raw)
 
-## Joining states data
-states_model<-left_join(states_attack_rates, states_household)
+var_names<-colnames(states_full_model[,c(startsWith(colnames(states_full_model), "EP_"))])
 
-# states_model|> 
-#   ggplot(aes(x = household_income, y = attack_rate, 
-#              col = household_size))+
-#   geom_point()+
-#   facet_wrap(variant~., scales = "free_y", nrow = 1)+
-#   theme_minimal()+
-#   labs(title = "Poisson model", 
-#        y = "Attack Rate \n (%) of pop. ever infected", 
-#        x = "Household Income \n ($)")+
-#   MetBrewer::scale_color_met_c(name = "Average Household size",
-#                                palette_name = "Demuth", 
-#                                direction = -1, 
-#                                guide = guide_colorbar(keywidth = grid::unit(3, "cm"),
-#                                                       title.position = "top", 
-#                                                       show.limits = T))+
-#   theme(legend.position = "bottom")
+formula <- reformulate(response = "attack_rate", termlabels = var_names)
 
-states_full_model<-left_join(states_fulldata, states_household)
+variants<-unique(states_full_model$variant)
 
-formula <- "attack_rate ~ household_size + household_income + variant"
-
-## Exploratory models
-poi_model<-glm(data = states_model, 
-               formula = formula,
-               family = poisson(link = "log"))
-summary(poi_model)
-
-effect_size_plt<-function(x, title){
+effect_size_fun<-function(x){
   plt<-x %>%
     # perform initial tidying of the model
     tidy_and_attach(exponentiate = TRUE, conf.int = TRUE) %>%
@@ -64,20 +50,66 @@ effect_size_plt<-function(x, title){
       plot_label = paste(label) %>%
         forcats::fct_inorder() %>%
         forcats::fct_rev()
-    ) |> 
-    ggplot(aes(x = plot_label, y = estimate, ymin = conf.low, ymax = conf.high, color = variable)) +
-    geom_hline(yintercept = 1, linetype = 2) +
-    geom_pointrange() +
-    coord_flip() +
-    theme(legend.position = "none") +
-    labs(
-      y = "Odds Ratio",
-      x = " ",
-      title = title
-    )+
-    theme_minimal()+
-    theme(legend.position = "bottom")
+    )
 }
+
+poisson_list<-list()
+effect_size_list<-list()
+
+for (i in variants) {
+  data<-states_full_model |> 
+    filter(variant == i)
+  
+  poisson_list[[i]]<-glm(data = data, 
+                         formula = formula,
+                         family = quasipoisson(link = "log"))
+  
+  effect_size_list[[i]]<-poisson_list[[i]] |> 
+    effect_size_fun() |> 
+    mutate(variant = i)
+}
+
+effect_size_list <- effect_size_list |> 
+  bind_rows() |> 
+  mutate(plt_label = case_when(label == 'EP_POV150' ~ "Below 150% poverty",
+                               label == 'EP_UNEMP' ~ "Unemployed",
+                               label == 'EP_HBURD' ~ "Housing Cost Burden",
+                               label == 'EP_NOHSDP' ~ "No High School Diploma",
+                               label == 'EP_UNINSUR' ~ "No Health Insurance",
+                               label == 'EP_AGE65' ~ "Aged 65 and older",
+                               label == 'EP_AGE17' ~ "Aged 17 and younger",
+                               label == 'EP_DISABL' ~ "Civilian with a Disability",
+                               label == 'EP_SNGPNT' ~ "Single-Parent Households",
+                               label == 'EP_LIMENG' ~ "English Language Proficieny",
+                               label == 'EP_MINRTY' ~ "Racial/Ethnic Minority",
+                               label == 'EP_MUNIT' ~ "Multi-unit Structures",
+                               label == 'EP_MOBILE' ~ "Mobile Homes",
+                               label == 'EP_CROWD' ~ "Crowding",
+                               label == 'EP_NOVEH' ~ "No Vehicle",
+                               label == 'EP_GROUPQ' ~ "Group Quartes"))
+
+
+effect_size_list|> 
+  ggplot(aes(x = plt_label, y = estimate, 
+             ymin = conf.low, ymax = conf.high, 
+             color = variable)) +
+  geom_hline(yintercept = 1, linetype = 2) +
+  geom_pointrange() +
+  coord_flip() +
+  theme(legend.position = "none") +
+  labs(
+    y = "IRR",
+    x = "Social Vulnerability Index (SVI) components",
+    title = title
+  )+
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
+## Exploratory models
+poi_model<-glm(data = states_full_model, 
+               formula = formula,
+               family = poisson(link = "log"))
+summary(poi_model)
 
 effect_size_poi<-poi_model|>
   effect_size_plt(title = "Poisson Model")
