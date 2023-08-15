@@ -68,42 +68,40 @@ for (i in variants) {
     effect_size_fun() |> 
     mutate(variant = i)
 }
+var_names<-list('EP_POV150' ~ "Below 150% poverty",
+                'EP_UNEMP' ~ "Unemployed",
+                'EP_HBURD' ~ "Housing Cost Burden",
+                'EP_NOHSDP' ~ "No High School Diploma",
+                'EP_UNINSUR' ~ "No Health Insurance",
+                'EP_AGE65' ~ "Aged 65 and older",
+                'EP_AGE17' ~ "Aged 17 and younger",
+                'EP_DISABL' ~ "Civilian with a Disability",
+                'EP_SNGPNT' ~ "Single-Parent Households",
+                'EP_LIMENG' ~ "English Language Proficieny",
+                'EP_MINRTY' ~ "Racial/Ethnic Minority",
+                'EP_LATINO' ~ "Hispanic or Latino (of any race)",
+                'EP_BLACK' ~ "Black or African American, not Hispanic or Latino",
+                'EP_ASIAN' ~ "Asian, not Hispanic or Latino",
+                'EP_NATIVE' ~ "American, Alaskan, Hawaiian Native, and Pacific Islander, not Hispanic or Latino",
+                'EP_TWOPLUS' ~ "Two or More Races, not Hispanic or Latino",
+                'EP_OTHERNL' ~ "Other Races, not Hispanic or Latino",
+                'EP_MUNIT' ~ "Multi-unit Structures",
+                'EP_MOBILE' ~ "Mobile Homes",
+                'EP_CROWD' ~ "Crowding",
+                'EP_NOVEH' ~ "No Vehicle",
+                'EP_GROUPQ' ~ "Group Quartes")
 
-effect_size_list <- effect_size_list |> 
-  bind_rows() |> 
-  mutate(plt_label = case_when(label == 'EP_POV150' ~ "Below 150% poverty",
-                               label == 'EP_UNEMP' ~ "Unemployed",
-                               label == 'EP_HBURD' ~ "Housing Cost Burden",
-                               label == 'EP_NOHSDP' ~ "No High School Diploma",
-                               label == 'EP_UNINSUR' ~ "No Health Insurance",
-                               label == 'EP_AGE65' ~ "Aged 65 and older",
-                               label == 'EP_AGE17' ~ "Aged 17 and younger",
-                               label == 'EP_DISABL' ~ "Civilian with a Disability",
-                               label == 'EP_SNGPNT' ~ "Single-Parent Households",
-                               label == 'EP_LIMENG' ~ "English Language Proficieny",
-                               label == 'EP_MINRTY' ~ "Racial/Ethnic Minority",
-                               label == 'EP_MUNIT' ~ "Multi-unit Structures",
-                               label == 'EP_MOBILE' ~ "Mobile Homes",
-                               label == 'EP_CROWD' ~ "Crowding",
-                               label == 'EP_NOVEH' ~ "No Vehicle",
-                               label == 'EP_GROUPQ' ~ "Group Quartes"))
-
-
-effect_size_list|> 
-  ggplot(aes(x = plt_label, y = estimate, 
-             ymin = conf.low, ymax = conf.high, 
-             color = variable)) +
-  geom_hline(yintercept = 1, linetype = 2) +
-  geom_pointrange() +
-  coord_flip() +
-  theme(legend.position = "none") +
-  labs(
-    y = "IRR",
-    x = "Social Vulnerability Index (SVI) components",
-    title = title
-  )+
-  theme_minimal()+
-  theme(legend.position = "bottom")
+poisson_list |> 
+  ggstats::ggcoef_compare(exponentiate = T, 
+                          variable_labels = var_names, 
+                          type = "faceted")+
+  scale_color_manual(values = c("#591C19","#752520","#912F28","#A23B2D","#AE4730","#BA5931",
+                                "#C6792F","#D39A2D","#E2AB45","#F1BC5E","#E5BF7E","#CABBA0",
+                                "#B2B2B3","#9E9EA6","#8B8B99","#777989","#636679","#54596D",
+                                "#494F65","#3D445A","#31384E","#262D42"))+
+  labs(x = "(IRR) \n Incidence Rate Ratio", y = "(SVI) \n Social Vulnerabilit Index components")+
+  xlim(c(NA,1.70))+
+  guides(color = "none")
 
 ## Exploratory models
 poi_model<-glm(data = states_full_model, 

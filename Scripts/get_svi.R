@@ -190,8 +190,7 @@ get_svi <- function(geo_unit, acs_year, state_id) {
            E_NOVEH = DP04_0058E,
            M_NOVEH = DP04_0058M,
            E_GROUPQ = B26001_001E,
-           M_GROUPQ = B26001_001M,
-      .keep = "unused") %>%
+           M_GROUPQ = B26001_001M) %>%
     # create percentages
     mutate(
       ## socioeconomic status
@@ -218,9 +217,23 @@ get_svi <- function(geo_unit, acs_year, state_id) {
       EP_LIMENG = (E_LIMENG / B16005_001E) * 100,
       MP_LIMENG = ((sqrt(M_LIMENG ^ 2 - ((EP_LIMENG / 100) ^ 2 * B16005_001M ^ 2))) / B16005_001E) * 100,
 
-      ## racial & ethnic minority status percenatges
+      ## racial & ethnic minority status percentages
       EP_MINRTY = (E_MINRTY / E_TOTPOP) * 100,
       MP_MINRTY = ((sqrt(M_MINRTY ^ 2 - ((EP_MINRTY / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      
+      ## breakdown of racial & ethnic minority status percentages
+      EP_LATINO = (DP05_0071E / E_TOTPOP) * 100,
+      MP_LATINO = ((sqrt(DP05_0071M ^ 2 - ((DP05_0071M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      EP_BLACK = (DP05_0078E / E_TOTPOP) * 100,
+      MP_BLACK = ((sqrt(DP05_0078M ^ 2 - ((DP05_0078M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      EP_ASIAN = (DP05_0080E / E_TOTPOP) * 100,
+      MP_ASIAN = ((sqrt(DP05_0080M ^ 2 - ((DP05_0080M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      EP_NATIVE = (DP05_0081E + DP05_0079E / E_TOTPOP) * 100,
+      MP_NATIVE = ((sqrt((DP05_0081E + DP05_0079E) ^ 2 - ((DP05_0081E + DP05_0079E / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      EP_TWOPLUS = (DP05_0082E / E_TOTPOP) * 100,
+      MP_TWOPLUS = ((sqrt(DP05_0082M ^ 2 - ((DP05_0082M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      EP_OTHERNL = (DP05_0083E / E_TOTPOP) * 100,
+      MP_OTHERNL = ((sqrt(DP05_0083M ^ 2 - ((DP05_0083M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
 
       ## housing type/transportation percentages
       EP_MUNIT = (E_MUNIT / E_HU) * 100,
