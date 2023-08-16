@@ -3,7 +3,7 @@ rm(list = ls())
 gc()
 
 ## Loading Libraries
-packs = c("tidyverse", "vroom", "MASS", "ggeffects", "marginaleffects", "broom.helpers", "sf", "tidycensus", "tidyverse")
+packs = c("tidyverse", "vroom", "MASS", "ggeffects", "marginaleffects", "broom.helpers", "sf", "tidycensus", "tidyverse", "ggstats")
 lapply(packs,require, character.only = TRUE)
 
 # Loading functions
@@ -22,13 +22,15 @@ geo_unit <- "state"
 svi_df_raw <- map_df(us, function(x) {
   get_svi(geo_unit, acs_year, x)
 }) 
-svi_df_raw<-svi_df_raw|> 
+svi_df<-svi_df_raw|> 
   select(GEOID, name_states, geometry, starts_with("EP_"))
 
 ## Joining data streams
-states_full_model<-left_join(states_attack_rates, svi_df_raw)
+states_full_model<-left_join(states_attack_rates, svi_df)
 
-var_names<-colnames(states_full_model[,c(startsWith(colnames(states_full_model), "EP_"))])
+var_names<-states_full_model |> 
+  select(starts_with("EP_"), -EP_MINRTY, -EP_OTHERNL) |> 
+  colnames()
 
 formula <- reformulate(response = "attack_rate", termlabels = var_names)
 
@@ -53,65 +55,77 @@ effect_size_fun<-function(x){
     )
 }
 
-poisson_list<-list()
+poisson_list<-gaussian_list<-list()
 effect_size_list<-list()
 
 for (i in variants) {
   data<-states_full_model |> 
-    filter(variant == i)
+    filter(variant == i) |> 
+    mutate(attack_rate_logit = Logit(attack_rate/100))
   
   poisson_list[[i]]<-glm(data = data, 
-                         formula = formula,
-                         family = quasipoisson(link = "log"))
+                         formula = reformulate(response = "attack_rate", termlabels = var_names), 
+                         family = poisson(link = "log"))
   
-  effect_size_list[[i]]<-poisson_list[[i]] |> 
-    effect_size_fun() |> 
-    mutate(variant = i)
+  gaussian_list[[i]]<-glm(data = data, 
+                          formula = reformulate(response = "attack_rate_logit", termlabels = var_names), 
+                          family = gaussian(link = "identity"))
 }
-var_names<-list('EP_POV150' ~ "Below 150% poverty",
-                'EP_UNEMP' ~ "Unemployed",
-                'EP_HBURD' ~ "Housing Cost Burden",
-                'EP_NOHSDP' ~ "No High School Diploma",
-                'EP_UNINSUR' ~ "No Health Insurance",
-                'EP_AGE65' ~ "Aged 65 and older",
-                'EP_AGE17' ~ "Aged 17 and younger",
-                'EP_DISABL' ~ "Civilian with a Disability",
-                'EP_SNGPNT' ~ "Single-Parent Households",
-                'EP_LIMENG' ~ "English Language Proficieny",
-                'EP_MINRTY' ~ "Racial/Ethnic Minority",
-                'EP_LATINO' ~ "Hispanic or Latino (of any race)",
-                'EP_BLACK' ~ "Black or African American, not Hispanic or Latino",
-                'EP_ASIAN' ~ "Asian, not Hispanic or Latino",
-                'EP_NATIVE' ~ "American, Alaskan, Hawaiian Native, and Pacific Islander, not Hispanic or Latino",
-                'EP_TWOPLUS' ~ "Two or More Races, not Hispanic or Latino",
-                'EP_OTHERNL' ~ "Other Races, not Hispanic or Latino",
-                'EP_MUNIT' ~ "Multi-unit Structures",
-                'EP_MOBILE' ~ "Mobile Homes",
-                'EP_CROWD' ~ "Crowding",
-                'EP_NOVEH' ~ "No Vehicle",
-                'EP_GROUPQ' ~ "Group Quartes")
+
+var_plt<-list('EP_POV150' ~ "Below 150% poverty",
+              'EP_UNEMP' ~ "Unemployed",
+              'EP_HBURD' ~ "Housing Cost Burden",
+              'EP_NOHSDP' ~ "No High School Diploma",
+              'EP_UNINSUR' ~ "No Health Insurance",
+              'EP_AGE65' ~ "Aged 65 and older",
+              'EP_AGE17' ~ "Aged 17 and younger",
+              'EP_DISABL' ~ "Civilian with a Disability",
+              'EP_SNGPNT' ~ "Single-Parent Households",
+              'EP_LIMENG' ~ "English Language Proficieny",
+              # 'EP_MINRTY' ~ "Racial/Ethnic Minority",
+              'EP_LATINO' ~ "Hispanic or Latino (of any race)",
+              'EP_BLACK' ~ "Black or African American, not Hispanic or Latino",
+              'EP_ASIAN' ~ "Asian, not Hispanic or Latino",
+              'EP_NATIVE' ~ "American, Alaskan, Hawaiian Native, and Pacific Islander, not Hispanic or Latino",
+              'EP_TWOPLUS' ~ "Two or More Races, not Hispanic or Latino",
+              # 'EP_OTHERNL' ~ "Other Races, not Hispanic or Latino",
+              'EP_MUNIT' ~ "Multi-unit Structures",
+              'EP_MOBILE' ~ "Mobile Homes",
+              'EP_CROWD' ~ "Crowding",
+              'EP_NOVEH' ~ "No Vehicle",
+              'EP_GROUPQ' ~ "Group Quartes")
 
 poisson_list |> 
   ggstats::ggcoef_compare(exponentiate = T, 
-                          variable_labels = var_names, 
+                          variable_labels = var_plt,
                           type = "faceted")+
-  scale_color_manual(values = c("#591C19","#752520","#912F28","#A23B2D","#AE4730","#BA5931",
-                                "#C6792F","#D39A2D","#E2AB45","#F1BC5E","#E5BF7E","#CABBA0",
-                                "#B2B2B3","#9E9EA6","#8B8B99","#777989","#636679","#54596D",
-                                "#494F65","#3D445A","#31384E","#262D42"))+
+  scale_color_manual(values = MetBrewer::met.brewer(palette_name = "Nizami",
+                                                    n = 22,
+                                                    type = "continuous"))+
   labs(x = "(IRR) \n Incidence Rate Ratio", y = "(SVI) \n Social Vulnerabilit Index components")+
-  xlim(c(NA,1.70))+
+  # xlim(c(NA,1.70))+
   guides(color = "none")
 
-## Exploratory models
-poi_model<-glm(data = states_full_model, 
-               formula = formula,
-               family = poisson(link = "log"))
-summary(poi_model)
+gaussian_list |> 
+  ggstats::ggcoef_compare(exponentiate = T, 
+                          variable_labels = var_plt,
+                          type = "faceted")+
+  scale_color_manual(values = MetBrewer::met.brewer(palette_name = "Nizami",
+                                                    n = 22,
+                                                    type = "continuous"))+
+  labs(x = "Odds Ratio", y = "(SVI) \n Social Vulnerabilit Index components")+
+  # xlim(c(NA,1.70))+
+  guides(color = "none")
 
-effect_size_poi<-poi_model|>
-  effect_size_plt(title = "Poisson Model")
-effect_size_poi
+# ## Exploratory models
+# poi_model<-glm(data = states_full_model, 
+#                formula = formula,
+#                family = poisson(link = "log"))
+# summary(poi_model)
+# 
+# effect_size_poi<-poi_model|>
+#   effect_size_plt(title = "Poisson Model")
+# effect_size_poi
 
 # quasipoi_model<-glm(data = states_model, 
 #                     formula = formula, 
@@ -135,15 +149,15 @@ effect_size_poi
 # 
 # 
 # 
-plot_predictions(poi_model,
-                 condition = c("household_income", "variant"),
-                 type = "response")+
-  theme_minimal()
-# 
-plot_predictions(poi_model,
-                 condition = c("household_size", "variant"),
-                 type = "response")+
-  theme_minimal()
+# plot_predictions(poi_model,
+#                  condition = c("household_income", "variant"),
+#                  type = "response")+
+#   theme_minimal()
+# # 
+# plot_predictions(poi_model,
+#                  condition = c("household_size", "variant"),
+#                  type = "response")+
+#   theme_minimal()
 # 
 # plot_predictions(poi_model,
 #                  condition = c("household_income", "variant", "household_size"),
