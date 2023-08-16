@@ -29,7 +29,7 @@ svi_df<-svi_df_raw|>
 states_full_model<-left_join(states_attack_rates, svi_df)
 
 var_names<-states_full_model |> 
-  select(starts_with("EP_"), -EP_MINRTY, -EP_OTHERNL) |> 
+  select(starts_with("EP_"), -EP_MINRTY) |> 
   colnames()
 
 formula <- reformulate(response = "attack_rate", termlabels = var_names)
@@ -55,8 +55,7 @@ effect_size_fun<-function(x){
     )
 }
 
-poisson_list<-gaussian_list<-list()
-effect_size_list<-list()
+poisson_list<-gaussian_list<-brms_list<-list()
 
 for (i in variants) {
   data<-states_full_model |> 
@@ -70,6 +69,10 @@ for (i in variants) {
   gaussian_list[[i]]<-glm(data = data, 
                           formula = reformulate(response = "attack_rate_logit", termlabels = var_names), 
                           family = gaussian(link = "identity"))
+  
+  # brms_list[[i]]<-brms::brm(data = data, 
+  #                           formula = reformulate(response = "attack_rate", termlabels = var_names),
+  #                           family = brmsfamily(family = "negbinomial", link = "log"))
 }
 
 var_plt<-list('EP_POV150' ~ "Below 150% poverty",
@@ -88,7 +91,7 @@ var_plt<-list('EP_POV150' ~ "Below 150% poverty",
               'EP_ASIAN' ~ "Asian, not Hispanic or Latino",
               'EP_NATIVE' ~ "American, Alaskan, Hawaiian Native, and Pacific Islander, not Hispanic or Latino",
               'EP_TWOPLUS' ~ "Two or More Races, not Hispanic or Latino",
-              # 'EP_OTHERNL' ~ "Other Races, not Hispanic or Latino",
+              'EP_OTHERNL' ~ "Other Races, not Hispanic or Latino",
               'EP_MUNIT' ~ "Multi-unit Structures",
               'EP_MOBILE' ~ "Mobile Homes",
               'EP_CROWD' ~ "Crowding",
@@ -102,9 +105,14 @@ poisson_list |>
   scale_color_manual(values = MetBrewer::met.brewer(palette_name = "Nizami",
                                                     n = 22,
                                                     type = "continuous"))+
-  labs(x = "(IRR) \n Incidence Rate Ratio", y = "(SVI) \n Social Vulnerabilit Index components")+
+  labs(x = "(IRR) \n Incidence Rate Ratio", 
+       y = "(SVI) \n Social Vulnerabilit Index components", 
+       title = "Poisson regression")+
   # xlim(c(NA,1.70))+
   guides(color = "none")
+
+# poisson_list$`Omicron BA.1*` |> 
+#   tbl_regression(label = var_plt)
 
 gaussian_list |> 
   ggstats::ggcoef_compare(exponentiate = T, 
@@ -113,9 +121,14 @@ gaussian_list |>
   scale_color_manual(values = MetBrewer::met.brewer(palette_name = "Nizami",
                                                     n = 22,
                                                     type = "continuous"))+
-  labs(x = "Odds Ratio", y = "(SVI) \n Social Vulnerabilit Index components")+
+  labs(x = "Odds Ratio", 
+       y = "(SVI) \n Social Vulnerabilit Index components",
+       title = "Normal regression")+
   # xlim(c(NA,1.70))+
   guides(color = "none")
+
+# gaussian_list$`Omicron BA.5*` |> 
+#   tbl_regression(label = var_plt)
 
 # ## Exploratory models
 # poi_model<-glm(data = states_full_model, 
