@@ -23,13 +23,13 @@ svi_df_raw <- map_df(us, function(x) {
   get_svi(geo_unit, acs_year, x)
 }) 
 svi_df<-svi_df_raw|> 
-  select(GEOID, name_states, geometry, starts_with("EP_"))
+  dplyr::select(GEOID, name_states, geometry, starts_with("EP_"))
 
 ## Joining data streams
 states_full_model<-left_join(states_attack_rates, svi_df)
 
 var_names<-states_full_model |> 
-  select(starts_with("EP_"), -EP_MINRTY) |> 
+  dplyr::select(starts_with("EP_"), -EP_MINRTY) |> 
   colnames()
 
 formula <- reformulate(response = "attack_rate", termlabels = var_names)
@@ -57,10 +57,15 @@ effect_size_fun<-function(x){
 
 poisson_list<-gaussian_list<-brms_list<-list()
 
+logit<-function(x){
+  y<-log(x/(1-x))
+  return(y)
+}
+
 for (i in variants) {
   data<-states_full_model |> 
     filter(variant == i) |> 
-    mutate(attack_rate_logit = Logit(attack_rate/100))
+    mutate(attack_rate_logit = logit(attack_rate/100))
   
   poisson_list[[i]]<-glm(data = data, 
                          formula = reformulate(response = "attack_rate", termlabels = var_names), 
@@ -126,6 +131,58 @@ gaussian_list |>
        title = "Normal regression")+
   # xlim(c(NA,1.70))+
   guides(color = "none")
+
+SVI_blocks<-list(SES = c(var_names[1:5]),
+                 HHC = c(var_names[6:10]),
+                 REMS = c(var_names[11:16]),
+                 HTT = c(var_names[17:21]))
+
+poisson_list<-gaussian_list<-brms_list<-list()
+
+for (i in variants) {
+  for (j in 1:length(SVI_blocks)) {
+    data<-states_full_model |> 
+      filter(variant == i) |>
+      mutate(attack_rate_logit = logit(attack_rate/100))
+    
+    poisson_list[[i]][[j]]<-glm(data = data, 
+                                formula = reformulate(response = "attack_rate", 
+                                                      termlabels = SVI_blocks[[j]]), 
+                                family = poisson(link = "log"))
+    
+    gaussian_list[[i]][[j]]<-glm(data = data, 
+                                 formula = reformulate(response = "attack_rate_logit", 
+                                                       termlabels = SVI_blocks[[j]]), 
+                                 family = gaussian(link = "identity"))
+    
+    # brms_list[[i]]<-brms::brm(data = data, 
+    #                           formula = reformulate(response = "attack_rate", termlabels = var_names),
+    #                           family = brmsfamily(family = "negbinomial", link = "log")) 
+  }
+  # poisson_list[[i]] <- poisson_list[[i]] |> 
+  #   bind_rows()
+  # 
+  # gaussian_list[[i]] <- gaussian_list[[i]] |> 
+  #   bind_rows()
+}
+
+poisson_model<-(ggcoef_compare(list(poisson_list$`Omicron BA.1*`[[1]], 
+                               poisson_list$`Omicron BA.2*`[[1]],
+                               poisson_list$`Omicron BA.4*`[[1]],
+                               poisson_list$`Omicron BA.5*`[[1]],
+                               poisson_list$`Omicron XBB*`[[1]])) + 
+                  ggcoef_compare(poisson_list$`Omicron BA.2*`) + 
+                  ggcoef_compare(poisson_list$`Omicron BA.4*`) + 
+                  ggcoef_compare(poisson_list$`Omicron BA.5*`) + 
+                  ggcoef_compare(poisson_list$`Omicron XBB*`))
+poisson_model
+
+gaussian_model<-(ggcoef_compare(gaussian_list$`Omicron BA.1*`) + 
+                  ggcoef_compare(gaussian_list$`Omicron BA.2*`) + 
+                  ggcoef_compare(gaussian_list$`Omicron BA.4*`) + 
+                  ggcoef_compare(gaussian_list$`Omicron BA.5*`) + 
+                  ggcoef_compare(gaussian_list$`Omicron XBB*`))
+gaussian_model
 
 # gaussian_list$`Omicron BA.5*` |> 
 #   tbl_regression(label = var_plt)
