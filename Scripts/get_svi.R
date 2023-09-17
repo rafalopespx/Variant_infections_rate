@@ -88,7 +88,7 @@ get_svi <- function(geo_unit, acs_year, state_id) {
                           geometry = TRUE, 
                           keep_geo_vars = TRUE) %>% 
     tibble() %>% 
-    select(GEOID, 
+    dplyr::select(GEOID, 
            name_states = NAME.x,
            state = LSAD,
            ALAND, AWATER, geometry,
@@ -247,7 +247,7 @@ get_svi <- function(geo_unit, acs_year, state_id) {
       EP_GROUPQ = (E_GROUPQ / E_TOTPOP) * 100,
       MP_GROUPQ = ((sqrt(M_GROUPQ ^ 2 - ((EP_GROUPQ / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100) %>%
     # drop unneeded variables
-    select(!(B16005_001E:DP04_0058PM))
+    dplyr::select(!(B16005_001E:DP04_0058PM))
   
   svi_rank <- svi_clean %>%
     # group_by(ST) %>%

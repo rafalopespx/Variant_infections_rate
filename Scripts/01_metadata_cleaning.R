@@ -48,7 +48,7 @@ metadata <- metadata |>
                                    pattern = '^(?=.*^P.1)', 
                                    perl = TRUE) ~ 'Gamma*',
                              grepl(x = pango_lineage, 
-                                   pattern = '^(?=.*B.1.617.2)', 
+                                   pattern = '^(?=.*B.1.617.2)|(?=.*^AY)', 
                                    perl = TRUE) ~ 'Delta*',
                              grepl(x = pango_lineage, 
                                    pattern = '^(?=.*BA.1)|(?=.*B.1.1.529.1)|(?=.*BD.1)', 

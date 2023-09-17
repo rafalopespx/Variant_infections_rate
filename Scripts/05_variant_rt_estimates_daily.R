@@ -27,7 +27,16 @@ rt_fun <- function(df, wallinga_teunis = FALSE){
   #last day with infections of variant to start the R estimate otherwise R estimate artificially high
   end0 <- max(which(df$I > 0))
   #dataframe filtered where there is the first case of variant
-  df2 <- df[non0:end0,] 
+  df2 <- df[non0:end0,]
+  
+  
+  ## Uncomment to switch to a different way to filter the infections
+  # #1st day with infections of variant to start the R estimate otherwise R estimate artificially high
+  # non0 <- which.min(df$I > 0)
+  # #last day with more than 10 infections, after this is filtered out
+  # end0 <- which.max(df$I < 10)
+  # #dataframe filtered where there is the first case of variant
+  # df2 <- df[non0:end0,]
   
   #input of interval for R estimate
   #estimate burn in period for R estimate: t_end - t_start
