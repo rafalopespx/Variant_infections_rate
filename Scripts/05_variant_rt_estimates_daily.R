@@ -71,14 +71,14 @@ rt_fun <- function(df, wallinga_teunis = FALSE){
     # essentially we are estimating the serial intervals of SARS-CoV-2 (Omicron variant specific)
     # by drawing from two ( truncated normal ) distributions 
     # for the mean and standard deviation of the serial interval
-    config <- list(mean_si = 3.5, 
-                   std_mean_si = 1, 
-                   min_mean_si = 1, 
-                   max_mean_si = 6, # estimates for SARS-CoV-2 serial interval
-                   std_si = 1, 
-                   std_std_si = 0.5, 
-                   min_std_si = 0.5, 
-                   max_std_si = 1.5,
+    config <- list(mean_si = 3.5, ## mean of the Mean distribution
+                   std_mean_si = 1, ## sd of Mean distribution
+                   min_mean_si = 1, ## left-truncation at 1 to the Mean distribution
+                   max_mean_si = 6, ## right-truncation at 6 to the Mean distribution
+                   std_si = 1, ## mean of the SD distribution
+                   std_std_si = 0.5, ## sd of the SD distribution
+                   min_std_si = 0.5, ## left-truncation at 0.5 to the SD distribution
+                   max_std_si = 1.5, ## right-truncation at 1.5 to the SD distribution
                    n1= 80, 
                    n2=20, 
                    t_start=t_start, 

@@ -221,19 +221,19 @@ get_svi <- function(geo_unit, acs_year, state_id) {
       EP_MINRTY = (E_MINRTY / E_TOTPOP) * 100,
       MP_MINRTY = ((sqrt(M_MINRTY ^ 2 - ((EP_MINRTY / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
       
-      ## breakdown of racial & ethnic minority status percentages
-      EP_LATINO = (DP05_0071E / E_TOTPOP) * 100,
-      MP_LATINO = ((sqrt(DP05_0071M ^ 2 - ((DP05_0071M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
-      EP_BLACK = (DP05_0078E / E_TOTPOP) * 100,
-      MP_BLACK = ((sqrt(DP05_0078M ^ 2 - ((DP05_0078M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
-      EP_ASIAN = (DP05_0080E / E_TOTPOP) * 100,
-      MP_ASIAN = ((sqrt(DP05_0080M ^ 2 - ((DP05_0080M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
-      EP_NATIVE = ((DP05_0081E + DP05_0079E )/ E_TOTPOP) * 100,
-      MP_NATIVE = ((sqrt((DP05_0081E + DP05_0079E) ^ 2 - (((DP05_0081E + DP05_0079E) / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
-      EP_TWOPLUS = (DP05_0083E / E_TOTPOP) * 100,
-      MP_TWOPLUS = ((sqrt(DP05_0083M ^ 2 - ((DP05_0083M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
-      EP_OTHERNL = (DP05_0082E / E_TOTPOP) * 100,
-      MP_OTHERNL = ((sqrt(DP05_0082M ^ 2 - ((DP05_0082M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      # ## breakdown of racial & ethnic minority status percentages
+      # EP_LATINO = (DP05_0071E / E_TOTPOP) * 100,
+      # MP_LATINO = ((sqrt(DP05_0071M ^ 2 - ((DP05_0071M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      # EP_BLACK = (DP05_0078E / E_TOTPOP) * 100,
+      # MP_BLACK = ((sqrt(DP05_0078M ^ 2 - ((DP05_0078M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      # EP_ASIAN = (DP05_0080E / E_TOTPOP) * 100,
+      # MP_ASIAN = ((sqrt(DP05_0080M ^ 2 - ((DP05_0080M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      # EP_NATIVE = ((DP05_0081E + DP05_0079E )/ E_TOTPOP) * 100,
+      # MP_NATIVE = ((sqrt((DP05_0081E + DP05_0079E) ^ 2 - (((DP05_0081E + DP05_0079E) / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      # EP_TWOPLUS = (DP05_0083E / E_TOTPOP) * 100,
+      # MP_TWOPLUS = ((sqrt(DP05_0083M ^ 2 - ((DP05_0083M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
+      # EP_OTHERNL = (DP05_0082E / E_TOTPOP) * 100,
+      # MP_OTHERNL = ((sqrt(DP05_0082M ^ 2 - ((DP05_0082M / 100) ^ 2 * M_TOTPOP ^ 2))) / E_TOTPOP) * 100,
       
       ## housing type/transportation percentages
       EP_MUNIT = (E_MUNIT / E_HU) * 100,
@@ -249,39 +249,40 @@ get_svi <- function(geo_unit, acs_year, state_id) {
     # drop unneeded variables
     dplyr::select(!(B16005_001E:DP04_0058PM))
   
-  svi_rank <- svi_clean %>%
-    # group_by(ST) %>%
-    mutate(
-      EPL_POV150 = percent_rank(EP_POV150),
-      EPL_UNEMP = percent_rank(EP_UNEMP),
-      EPL_HBURD = percent_rank(EP_HBURD),
-      EPL_NOHSDP = percent_rank(EP_NOHSDP),
-      EPL_UNINSUR = percent_rank(EP_UNINSUR),
-      SPL_THEME1 = EPL_POV150 + EPL_UNEMP +  EPL_HBURD + EPL_NOHSDP + EPL_UNINSUR,
-      RPL_THEME1 = percent_rank(SPL_THEME1),
-      
-      EPL_AGE65 = percent_rank(EP_AGE65),
-      EPL_AGE17 = percent_rank(EP_AGE17),
-      EPL_DISABL = percent_rank(EP_DISABL),
-      EPL_SNGPNT = percent_rank(EP_SNGPNT),
-      EPL_LIMENG = percent_rank(EP_LIMENG),
-      SPL_THEME2 = EPL_AGE65 + EPL_AGE17 + EPL_DISABL + EPL_SNGPNT + EPL_LIMENG,
-      RPL_THEME2 = percent_rank(SPL_THEME2),
-      
-      EPL_MINRTY = percent_rank(EP_MINRTY),
-      SPL_THEME3 = EPL_MINRTY,
-      RPL_THEME3 = percent_rank(SPL_THEME3),
-      
-      EPL_MUNIT = percent_rank(EP_MUNIT),
-      EPL_MOBILE = percent_rank(EP_MOBILE),
-      EPL_CROWD = percent_rank(EP_CROWD),
-      EPL_NOVEH = percent_rank(EP_NOVEH),
-      EPL_GROUPQ = percent_rank(EP_GROUPQ),
-      SPL_THEME4 = EPL_MUNIT + EPL_MOBILE + EPL_CROWD + EPL_NOVEH + EPL_GROUPQ,
-      RPL_THEME4 = percent_rank(SPL_THEME4),
-      
-      SPL_THEMES = SPL_THEME1 + SPL_THEME2 + SPL_THEME3 + SPL_THEME4,
-      RPL_THEMES = percent_rank(SPL_THEMES))
+  svi_rank <- svi_clean  
+  # |> 
+  #   # group_by(ST) %>%
+  #   mutate(
+  #     EPL_POV150 = percent_rank(EP_POV150),
+  #     EPL_UNEMP = percent_rank(EP_UNEMP),
+  #     EPL_HBURD = percent_rank(EP_HBURD),
+  #     EPL_NOHSDP = percent_rank(EP_NOHSDP),
+  #     EPL_UNINSUR = percent_rank(EP_UNINSUR),
+  #     SPL_THEME1 = EPL_POV150 + EPL_UNEMP +  EPL_HBURD + EPL_NOHSDP + EPL_UNINSUR,
+  #     RPL_THEME1 = percent_rank(SPL_THEME1),
+  #     
+  #     EPL_AGE65 = percent_rank(EP_AGE65),
+  #     EPL_AGE17 = percent_rank(EP_AGE17),
+  #     EPL_DISABL = percent_rank(EP_DISABL),
+  #     EPL_SNGPNT = percent_rank(EP_SNGPNT),
+  #     EPL_LIMENG = percent_rank(EP_LIMENG),
+  #     SPL_THEME2 = EPL_AGE65 + EPL_AGE17 + EPL_DISABL + EPL_SNGPNT + EPL_LIMENG,
+  #     RPL_THEME2 = percent_rank(SPL_THEME2),
+  #     
+  #     EPL_MINRTY = percent_rank(EP_MINRTY),
+  #     SPL_THEME3 = EPL_MINRTY,
+  #     RPL_THEME3 = percent_rank(SPL_THEME3),
+  #     
+  #     EPL_MUNIT = percent_rank(EP_MUNIT),
+  #     EPL_MOBILE = percent_rank(EP_MOBILE),
+  #     EPL_CROWD = percent_rank(EP_CROWD),
+  #     EPL_NOVEH = percent_rank(EP_NOVEH),
+  #     EPL_GROUPQ = percent_rank(EP_GROUPQ),
+  #     SPL_THEME4 = EPL_MUNIT + EPL_MOBILE + EPL_CROWD + EPL_NOVEH + EPL_GROUPQ,
+  #     RPL_THEME4 = percent_rank(SPL_THEME4),
+  #     
+  #     SPL_THEMES = SPL_THEME1 + SPL_THEME2 + SPL_THEME3 + SPL_THEME4,
+  #     RPL_THEMES = percent_rank(SPL_THEMES))
   
   return(svi_rank)
 }

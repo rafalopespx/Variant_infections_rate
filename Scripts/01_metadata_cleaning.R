@@ -84,6 +84,15 @@ vroom_write(x = metadata,
 ## Reading the saved categorized .csv
 metadata<-vroom("Data/metadata_us.csv.xz")
 
+##Saving the EPI_ISL numbers to DOI creation
+gisaid_epi_isl <- metadata |> 
+  filter(date >= "2021-09-01") |> 
+  select(gisaid_epi_isl) |> 
+  drop_na()
+
+vroom_write(x = gisaid_epi_isl, 
+            file = "Data/metadata_epi_isl_numbers.csv")
+
 ## Variant sequences counts
 variant_count<-metadata |> 
   ## First probable sequence of Omicron in the US

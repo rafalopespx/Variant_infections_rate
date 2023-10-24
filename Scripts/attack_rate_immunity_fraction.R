@@ -180,12 +180,12 @@ states_attack_rates <- states_fulldata |>
 
 ## Loading Immunity estimates
 
-## Pre Omicron model
+## Post Omicron model
 immunity_fraction_pos_omicron<-vroom("Data/immunity-weekly-state.csv.xz") |> 
   rename(name_states = location,
          days = date) 
 
-## Pos Omicron model
+## Pre Omicron model
 immunity_fraction_pre_omicron<-vroom("Data/immunity-daily-state.csv.xz") |> 
   rename(name_states = location,
          days = date)
@@ -339,11 +339,11 @@ for(i in 1:length(protected_types)){
       bi_scale_fill(pal = custom_pal4_1, 
                     dim = 4) +
       labs(subtitle = variants[j]
-      #   title = "Attack Rate vs. Spike-exposed during",
-      #   subtitle = paste0(variants[j], 
-      #                     " wave via ", 
-      #                     str_remove(protected_labels[i],
-      #                                " protected estimates"))
+           #   title = "Attack Rate vs. Spike-exposed during",
+           #   subtitle = paste0(variants[j], 
+           #                     " wave via ", 
+           #                     str_remove(protected_labels[i],
+           #                                " protected estimates"))
       ) +
       theme_void()
     
@@ -353,36 +353,36 @@ for(i in 1:length(protected_types)){
                   heights = c(4,1))
     
   }
-
-## Labels
-labels1 <- bi_class_breaks(states_immune_map,
-                           x = values,
-                           y = attack_rate,
-                           style = "quantile",
-                           dim = 4,
-                           dig_lab = 2,
-                           split = FALSE)
-## Legend
-legend <- bi_legend(pal = custom_pal4_1,
-                    breaks = labels1,
-                    dim = 4,
-                    xlab = "Higher (%) Effectively Protected",
-                    ylab = "Higher (%) Attack Rate",
-                    size = 12)+
-  theme_minimal()+
-  # bi_theme()+
-  theme(axis.text.x = element_text(angle = 90))
-
-# combine map with legend
-plot_list[[i]] <- (map[[1]] | map[[2]] | map[[3]])/(map[[4]] | map[[5]] | legend)
-
-# ## Saving the plots
-ggsave(filename = paste0("Output/Plots/bivariate_plots/plot_",protected_types[i], ".png"),
-       plot = plot_list[[i]],
-       width = 11,
-       height = 9,
-       dpi = 100)
-# finalPlot
+  
+  ## Labels
+  labels1 <- bi_class_breaks(states_immune_map,
+                             x = values,
+                             y = attack_rate,
+                             style = "quantile",
+                             dim = 4,
+                             dig_lab = 2,
+                             split = FALSE)
+  ## Legend
+  legend <- bi_legend(pal = custom_pal4_1,
+                      breaks = labels1,
+                      dim = 4,
+                      xlab = "Higher (%) Effectively Protected",
+                      ylab = "Higher (%) Attack Rate",
+                      size = 12)+
+    theme_minimal()+
+    # bi_theme()+
+    theme(axis.text.x = element_text(angle = 90))
+  
+  # combine map with legend
+  plot_list[[i]] <- (map[[1]] | map[[2]] | map[[3]])/(map[[4]] | map[[5]] | legend)
+  
+  # ## Saving the plots
+  ggsave(filename = paste0("Output/Plots/bivariate_plots/plot_",protected_types[i], ".png"),
+         plot = plot_list[[i]],
+         width = 11,
+         height = 9,
+         dpi = 100)
+  # finalPlot
 }
 
 plot_list[[4]]
@@ -391,91 +391,3 @@ plot_list[[2]]
 plot_list[[1]]
 
 
-## Attack Rates scatterplots
-
-states_omicron_ba1_ar <- states_attack_rates|> 
-  filter(variant == "Omicron BA.1*") |> 
-  dplyr::select(name_states, attack_rate) |> 
-  rename("Omicron BA.1* Attack Rate" = attack_rate)
-
-states_omicron_ba2_ar <- states_attack_rates|> 
-  filter(variant == "Omicron BA.2*") |> 
-  dplyr::select(name_states, attack_rate) |> 
-  rename("Omicron BA.2* Attack Rate" = attack_rate)
-
-states_omicron_ba4_ar <- states_attack_rates|> 
-  filter(variant == "Omicron BA.4*") |> 
-  dplyr::select(name_states, attack_rate) |> 
-  rename("Omicron BA.4* Attack Rate" = attack_rate)
-
-states_omicron_ba5_ar <- states_attack_rates|> 
-  filter(variant == "Omicron BA.5*") |> 
-  dplyr::select(name_states, attack_rate) |> 
-  rename("Omicron BA.5* Attack Rate" = attack_rate)
-
-states_omicron_xbb_ar <- states_attack_rates|> 
-  filter(variant == "Omicron XBB*") |> 
-  dplyr::select(name_states, attack_rate) |> 
-  rename("Omicron XBB* Attack Rate" = attack_rate)
-
-states_joined <- full_join(states_omicron_ba1_ar, 
-                           states_omicron_ba2_ar) |>
-  left_join(states_omicron_ba4_ar) |> 
-  left_join(states_omicron_ba5_ar) |> 
-  left_join(states_omicron_xbb_ar) |> 
-  left_join(states_abb)
-
-ba1_ba2 <- states_joined |> 
-  ggplot(aes(x = `Omicron BA.1* Attack Rate`, 
-             y = `Omicron BA.2* Attack Rate`,
-             label = `State Code`, 
-             col = Region))+
-  geom_point()+
-  geom_text_repel(show.legend = F)+
-  theme_bw()+
-  theme(legend.position = "bottom")
-
-ba2_ba4 <- states_joined |> 
-  ggplot(aes(x = `Omicron BA.2* Attack Rate`, 
-             y = `Omicron BA.4* Attack Rate`,
-             label = `State Code`, 
-             col = Region))+
-  geom_point()+
-  geom_text_repel(show.legend = F)+
-  theme_bw()+
-  theme(legend.position = "bottom")
-
-ba2_ba5 <- states_joined |> 
-  ggplot(aes(x = `Omicron BA.2* Attack Rate`, 
-             y = `Omicron BA.5* Attack Rate`,
-             label = `State Code`, 
-             col = Region))+
-  geom_point()+
-  geom_text_repel(show.legend = F)+
-  theme_bw()+
-  theme(legend.position = "bottom")
-
-ba4_ba5 <- states_joined |> 
-  ggplot(aes(x = `Omicron BA.4* Attack Rate`, 
-             y = `Omicron BA.5* Attack Rate`,
-             label = `State Code`, 
-             col = Region))+
-  geom_point()+
-  geom_text_repel(show.legend = F)+
-  theme_bw()+
-  theme(legend.position = "bottom")
-
-ba5_xbb <- states_joined |> 
-  ggplot(aes(x = `Omicron BA.5* Attack Rate`, 
-             y = `Omicron XBB* Attack Rate`,
-             label = `State Code`, 
-             col = Region))+
-  geom_point()+
-  geom_text_repel(show.legend = F)+
-  theme_bw()+
-  theme(legend.position = "bottom")
-
-patchwork_ar <- (ba1_ba2 | ba2_ba4 | ba2_ba5 | ba4_ba5 | ba5_xbb)+
-  plot_layout(guides = 'collect')&
-  theme(legend.position = "bottom")
-patchwork_ar
