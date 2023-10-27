@@ -7,7 +7,7 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Pipeline runnig order status
+## Running order of the pipeline
 
 At `r Sys.Date()`, the pipeline running order is:
 

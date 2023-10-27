@@ -107,7 +107,7 @@ peak_infections_table |>
 total_infections_by_variant_table <- estimates_rt_incidence |> 
   group_by(variant) |> 
   summarise(total_infections = sum(infections, na.rm = T)) %>%
-  add_row(variant = "Total", summarise(., across(where(is.numeric), sum))) |> 
+  add_row(variant = "Overall", summarise(., across(where(is.numeric), sum))) |> 
   tbl_summary(by = variant, 
               type = list(everything() ~ "continuous"),
               statistic = all_continuous() ~ "{mean}",
@@ -170,6 +170,7 @@ total_attack_rate_us_table <- estimates_rt_incidence |>
               statistic = list(all_continuous() ~ "{mean}% ({max}%, {min}%)"),
               label = list(values ~ ""),
               digits = list(all_continuous() ~ 1))   |> 
+  add_overall() |> 
   modify_header(label ~ "", 
                 all_stat_cols() ~ "**{level}**") |> 
   modify_footnote(all_stat_cols() ~ NA) |> 
@@ -263,3 +264,4 @@ us_total_table |>
   gt::gtsave(filename = "Output/Tables/usa_ar_peak_total.docx")
 
 #
+  

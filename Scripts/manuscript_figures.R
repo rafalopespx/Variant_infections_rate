@@ -30,20 +30,6 @@ variant_count<-vroom("Data/variant_counts_us.csv.xz") |>
                           levels = c("Omicron BA.1*", "Omicron BA.2*", "Omicron BA.4*", "Omicron BA.5*",
                                      "Omicron XBB*")))
 
-# ## Joining Rt with variant counts
-# estimates_rt_incidence<-rt_estimates |>
-#   left_join(variant_count) |>
-#   mutate(variant = droplevels(factor(variant))) |> 
-#   left_join(pop_states, by = c("name_states" = "state")) |> 
-#   ## Renaming infections
-#   rename(infections = I) |> 
-#   ## Creating incidence per 100k
-#   mutate(incidence = (infections/pop)*1e5, 
-#          percentual_incidence = round(incidence/pop, 2))
-# 
-# vroom_write(x = estimates_rt_incidence, 
-#             file = "Data/state_full_data.csv.xz")
-
 ## Loading estimates_rt_incidence dataset
 estimates_rt_incidence <- vroom("Data/state_full_data.csv.xz")
 
@@ -409,40 +395,40 @@ figure3_data_national<- estimates_rt_incidence |>
 figure3<- figure3_data |> 
   ggplot(aes(x = days, 
              y = Rt, 
-             ymin = lower, 
-             ymax = upper,
-             fill = variant,
+             # ymin = lower, 
+             # ymax = upper,
+             # fill = variant,
              group = name_states))+
   geom_hline(yintercept = 1, 
              show.legend = F, 
              col = "grey9")+
-  geom_line(aes(col = variant),
+  # geom_line(aes(col = variant),
+  #           alpha = .1,
+  #           show.legend = F)+
+  # geom_ribbon(alpha = .01,
+  #             show.legend = F)+
+  # geom_line(data = figure3_data_national,
+  #           aes(x = days,
+  #               y = median,
+  #               col = "National average"),
+  #           inherit.aes = F,
+  #           alpha = .1,
+#           lwd = .8)+
+geom_smooth(aes(col = variant,
+                fill = variant),
             alpha = .1,
-            show.legend = F)+
-  geom_ribbon(alpha = .01,
-              show.legend = F)+
-  geom_line(data = figure3_data_national,
-            aes(x = days,
-                y = median,
-                col = "National average"),
-            inherit.aes = F,
-            alpha = .1,
-            lwd = .8)+
-  # geom_smooth(aes(col = variant,
-  #                 fill = variant),
-  #             alpha = .1,
-  #             lwd = .1,
-  #             method = "loess",
-  #             show.legend = FALSE)+
-  # geom_smooth(data = figure3_data_national,
-  #             aes(x = days,
-  #                 y = median,
-  #                 col = "National average"),
-  #             inherit.aes = F,
-  #             alpha = .1,
-  #             lwd = .8,
-  #             method = "loess")+
-theme_minimal()+
+            lwd = .1,
+            method = "loess",
+            show.legend = FALSE)+
+  geom_smooth(data = figure3_data_national,
+              aes(x = days,
+                  y = median,
+                  col = "National average"),
+              inherit.aes = F,
+              alpha = .1,
+              lwd = .8,
+              method = "loess")+
+  theme_minimal()+
   labs(x = "Date", y = "Effective Reproduction \n (Rt)")+
   facet_wrap(variant~., 
              ncol = 1, 
@@ -481,6 +467,7 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/fi
        height = 9, 
        dpi = 100)
 
+## log-scale Rt figure
 figure3_log <- figure3+scale_y_log10()+labs(x = "Date", y = "log Effective Reproduction \n (Rt)")
 figure3_log
 
@@ -507,9 +494,6 @@ figure4a_data<-rt_ratio |>
           lower = mean(lower, na.rm = T),
           upper = mean(upper, na.rm = T), 
           .by = c(days, ratios))
-# |> 
-#   filter(ratios %in% c("BA.2*/BA.1*", "BA.5*/BA.2*", "XBB*/BA.5*")) |> 
-#   mutate(ratios = droplevels(factor(ratios)))
 
 figure4a <- figure4a_data |> 
   mutate(ratios = factor(ratios, 
@@ -528,7 +512,7 @@ figure4a <- figure4a_data |>
         axis.text = element_text(size = 14), 
         strip.text.x.top = element_text(hjust = 0))+
   scale_x_date(date_breaks = "2 months", date_labels = "%b '%y")+
-  labs(y = "Average (Rt) ratio", x = "Date")+
+  labs(y = "Rt ratio", x = "")+
   MetBrewer::scale_color_met_d(palette_name = "Johnson", name = "", direction = -1)+
   MetBrewer::scale_fill_met_d(palette_name = "Johnson", name = "", direction = -1)
 figure4a
@@ -654,33 +638,7 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/fi
        height = 9, 
        dpi = 100)
 
-# figure4d<- figure4c_data |> 
-#   ggplot(aes(x = ratios, y = `State Code`)) +
-#   geom_tile(aes(fill = round(median, 1)))+
-#   MetBrewer::scale_fill_met_c(palette_name = "Demuth", name = "", direction = -1, 
-#                               guide = guide_bins(keywidth = grid::unit(1.5, "cm"),
-#                                                  title.position = "top", 
-#                                                  title.hjust = .5,
-#                                                  show.limits = T, 
-#                                                  title = "Average (Rt) ratio"))+
-#   theme_minimal()+
-#   labs(x = "Ratios",
-#        y = "State")+
-#   theme(legend.position = "bottom")
-# figure4d
-# 
-# ggsave(filename = "Output/Plots/figure4d_manuscript.png", 
-#        plot = figure4d, 
-#        width = 11, 
-#        height = 9, 
-#        dpi = 100)
-# 
-# ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/figure4d_manuscript.pdf", 
-#        plot = figure4d, 
-#        width = 11,
-#        height = 9, 
-#        dpi = 100)
-
+## Patchwork
 patchwork_figure4 <- (figure4a + figure4b)+
   plot_annotation(tag_levels = 'A')
 patchwork_figure4
@@ -826,49 +784,4 @@ figureS1d <- estimates_rt_incidence |>
   theme(axis.text.x = element_text(angle = 90))
 figureS1d
 
-# library(ggsankey)
-# 
-# df<- figure4c_data |> 
-#   mutate(state_code = `State Code`) |> 
-#   select(state_code, ratios, median, Region, Division) |>
-#   mutate(median = round(median, 2)) 
-
-# |> 
-#   pivot_wider(id_cols = "state_code", names_from = "ratios", values_from = "median") 
-# 
-# df<- df |> 
-#   make_long(`BA.2*/BA.1*`, `BA.4*/BA.2*`, `BA.5*/BA.2*`, `BA.5*/BA.4*`, `XBB*/BA.5*`) 
-
-# ggplot(df, aes(x = x, 
-#                next_x = next_x, 
-#                node = node, 
-#                next_node = next_node, 
-#                fill = factor(node), 
-#                label = node)) +
-#   geom_sankey_bump(flow.alpha = .6) +
-#   geom_sankey_text(size = 3, color = "white") +
-#   scale_fill_met_d(palette_name = "Morgenstern") +
-#   theme_alluvial(base_size = 18) +
-#   labs(x = NULL) +
-#   theme(legend.position = "none",
-#         plot.title = element_text(hjust = .5))
-
-# df<-rt_ratio |> 
-#   reframe(median = mean(median, na.rm = F), 
-#           .by = c(days, name_states, ratios)) |> 
-#   left_join(states_abb, by = c("name_states" = "State")) |> 
-#   rename(state_code = `State Code`)
-# 
-# ggplot(data = df, 
-#        aes(x = ratios, 
-#            node = state_code, 
-#            fill = Region, 
-#            value = median))+
-#   geom_sankey_bump(space = 0, type = "alluvial", color = "transparent", smooth = 6) +
-#   scale_fill_met_d(palette_name = "Hiroshige")+
-#   theme_sankey_bump(base_size = 16) +
-#   labs(x = NULL,
-#        # y = "GDP ($ bn)",
-#        fill = NULL,
-#        color = NULL) +
-#   theme(legend.position = "bottom")
+#
