@@ -16,9 +16,6 @@ states_fulldata<-vroom("Data/state_full_data.csv.xz")
 states_abb<-vroom("Data/state_abbreviation.tsv")
 
 states_attack_rates <- states_fulldata |> 
-  # ## filtering to days before the peak of infections of each variant, all states
-  # filter(days <= days[which.max(infections)],
-  #        .by = c("name_states", "variant")) |>
   reframe(total_infections = sum(infections, na.rm = T),
           total_incidence = sum(incidence, na.rm = T),
           pop = first(pop),
@@ -96,12 +93,6 @@ SVI_states_map <- states_svi |>
   geom_sf(aes(fill = SVI), 
           show.legend = F, 
           lwd = 0.1)+
-  # ggrepel::geom_label_repel(aes(label = `State Code`, 
-  #                               geometry = geometry),
-  #                           size= 3,
-  #                           stat = "sf_coordinates", 
-  #                           max.overlaps = Inf,
-  #                           color = "black")+
   theme_void()+
   scale_fill_met_c(palette = "Tam", 
                    # direction = -1,
@@ -137,6 +128,9 @@ states_ar_svi_longer <- states_ar_svi |>
   pivot_longer(cols = c(`Omicron BA.1*`:`Omicron XBB*`),
                names_to = "variant",
                values_to = "attack_rate")
+
+vroom_write(x = states_ar_svi_longer, 
+            file = "Data/states_ar_svi_longer.csv.xz")
 
 label_ar_svi <- states_ar_svi_longer |> 
   filter(SVI == max(SVI))
