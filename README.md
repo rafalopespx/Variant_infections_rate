@@ -3,17 +3,17 @@ README
 
 # Combining genomic data and infection estimates to characterize the complex dynamics of SARS-CoV-2 Omicron variants in the United States
 
-Rafael Lopes1,#, Kien Pham1, Fayette Klaassen2, Melanie H. Chitwood1,
+Rafael Lopes1,*, Kien Pham1, Fayette Klaassen2, Melanie H. Chitwood1,
 Anne M. Hahn1, Seth Redmond1, Nicole A. Swartwood2, Joshua A. Salomon3,
-Nicolas A. Menzies2, Ted Cohen1,*,#, Nathan D. Grubaugh1,4,*,#
+Nicolas A. Menzies2, Ted Cohen1,*,†, Nathan D. Grubaugh1,4,*,†
 
 1 Department of Epidemiology of Microbial Diseases and Public Health
 Modeling Unit, Yale School of Public Health, New Haven, CT, USA 2
 Department of Global Health and Population, Harvard T. H. Chan School of
 Public Health, Boston, MA, USA 3 Department of Health Policy, Stanford
 University School of Medicine, Stanford, CA, USA 4 Department of Ecology
-and Evolutionary Biology, Yale University, New Haven, CT, USA \*
-Co-senior authors \# Corresponding authors: <rafael.lopes@yale.edu>,
+and Evolutionary Biology, Yale University, New Haven, CT, USA \†
+Co-senior authors \* Corresponding authors: <rafael.lopes@yale.edu>,
 <theodore.cohen@yale.edu>, <nathan.grubaugh@yale.edu>
 
 ## Data Availability
@@ -30,13 +30,13 @@ and the list of Authors, visit https//doi.org/10.55876/gis8.231023hd
 
 ## Pipeline Running order
 
-All the codes to reproduce the paper analysis are at Scripts/ folder. At
+All the codes to reproduce the paper analysis are in 'Scripts/' folder. At
 2023-10-30, the pipeline running order is:
 
 - **manuscript_figures.R**, make all the manuscript figures.
 - **manuscript_table.R**, make all the manuscript tables.
 - **01_metadata_cleaning.R**, clean metadata from GISAID and set variant
-  categories, count and frequencies.
+  categories, count, and frequencies.
 - (Optional) **02_plot_metadata.R**, plot figures with variant counts
   and frequencies.
 - **03_infections_per_variant_estimates.R**, estimates infections per
@@ -45,6 +45,6 @@ All the codes to reproduce the paper analysis are at Scripts/ folder. At
   infections.
 - **05_variant_rt_estimates_daily.R**, estimate Rt per variant per
   state.
-- **06_rt_ratios.R**, estimates rt ratio per pairs of variants.
+- **06_rt_ratios.R**, estimates Rt ratio per pair of variants.
 - **07_attack_rate_svi.R**, attack rate vs SVI correlation and figure4
   of the manuscript.
