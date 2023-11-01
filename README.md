@@ -3,18 +3,23 @@ README
 
 # Combining genomic data and infection estimates to characterize the complex dynamics of SARS-CoV-2 Omicron variants in the United States
 
-Rafael Lopes1,*, Kien Pham1, Fayette Klaassen2, Melanie H. Chitwood1,
+Rafael Lopes1,\*, Kien Pham1, Fayette Klaassen2, Melanie H. Chitwood1,
 Anne M. Hahn1, Seth Redmond1, Nicole A. Swartwood2, Joshua A. Salomon3,
-Nicolas A. Menzies2, Ted Cohen1,*,†, Nathan D. Grubaugh1,4,*,†
+Nicolas A. Menzies2, Ted Cohen1,\*,†, Nathan D. Grubaugh1,4,\*,†
 
 1 Department of Epidemiology of Microbial Diseases and Public Health
-Modeling Unit, Yale School of Public Health, New Haven, CT, USA 2
-Department of Global Health and Population, Harvard T. H. Chan School of
-Public Health, Boston, MA, USA 3 Department of Health Policy, Stanford
-University School of Medicine, Stanford, CA, USA 4 Department of Ecology
-and Evolutionary Biology, Yale University, New Haven, CT, USA \†
-Co-senior authors \* Corresponding authors: <rafael.lopes@yale.edu>,
-<theodore.cohen@yale.edu>, <nathan.grubaugh@yale.edu>
+Modeling Unit, Yale School of Public Health, New Haven, CT, USA
+
+2 Department of Global Health and Population, Harvard T. H. Chan School of
+Public Health, Boston, MA, USA
+
+3 Department of Health Policy, Stanford University School of Medicine, Stanford, CA, USA
+
+4 Department of Ecology and Evolutionary Biology, Yale University, New Haven, CT, USA
+
+† Co-senior authors
+
+\* Corresponding authors: <rafael.lopes@yale.edu>, <theodore.cohen@yale.edu>, <nathan.grubaugh@yale.edu>
 
 ## Data Availability
 
