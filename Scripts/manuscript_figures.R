@@ -422,7 +422,7 @@ states_attack_rates_wider <- states_attack_rates |>
   left_join(states_abb)
 
 ## Read directly from the saved .shp file
-states_svi <- st_read("Data/states_svi.shp") |> 
+states_svi <- sf::st_read("Data/states_svi.shp") |> 
   rename(name_states = nm_stts,
          SVI_rank = SVI_rnk) |> 
   tigris::shift_geometry() |> 
@@ -473,6 +473,11 @@ states_ar_svi_longer <- states_ar_svi |>
 label_ar_svi <- states_ar_svi_longer |> 
   filter(SVI == max(SVI))
 
+cor_mat <- data.frame(correlation::cor_test(data = states_ar_svi,
+                                            x = "Omicron BA.1*",
+                                            y = "SVI", 
+                                            method = "Pearson"))
+
 figure4c <-
   ggplot(data = states_ar_svi_longer,
          aes(x = SVI, 
@@ -493,11 +498,8 @@ figure4c <-
   ggpubr::stat_cor(method = "pearson",
                    geom = "label",
                    cor.coef.name = "R",
-                   aes(label = paste(after_stat(..r.label..),
-                                     after_stat(..p.label..),
-                                     sep = "~`,`~")), 
-                   label.x.npc = 0,
-                   label.y.npc = 1,
+                   # label.x.npc = 0,
+                   # label.y.npc = 1,
                    r.digits = 2,
                    r.accuracy = 0.01, 
                    show.legend = F)+
@@ -629,8 +631,8 @@ figure4b
 library(patchwork)
 
 figure4 <- (((figure4a) / 
-                        (figure4b))|
-                       (figure4c))+
+               (figure4b))|
+              (figure4c))+
   plot_layout(guides = 'collect',
               tag_level = "new")+
   plot_annotation(tag_levels = 'A')&
