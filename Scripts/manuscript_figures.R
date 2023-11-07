@@ -3,7 +3,7 @@ rm(list = ls())
 gc()
 
 ## Loading Libraries
-packs = c("tidyverse", "vroom", "patchwork", "geofacet", "tigris", "ggforce", "ggthemes", "MetBrewer", "ggrepel", "gghighlight", "ggpmisc")
+packs = c("tidyverse", "vroom", "patchwork", "geofacet", "tigris", "ggforce", "ggthemes", "MetBrewer", "ggrepel", "gghighlight", "ggpmisc", "correlation")
 lapply(packs,require, character.only = TRUE)
 
 # Loading functions
@@ -368,6 +368,7 @@ figure3<- figure3_data |>
   labs(x = "Date", y = "Effective Reproduction \n (Rt)")+
   facet_wrap(variant~., 
              ncol = 1, 
+             scales = "free_y",
              strip.position = "top")+
   scale_x_date(date_labels = "%b '%y", 
                breaks = seq.Date(from = min(figure3_data$days, na.rm = T), 
@@ -446,7 +447,8 @@ SVI_states_map <- states_svi |>
                                           title.hjust = 0.5,
                                           nbin = 10)
   )+
-  labs(title = "SVI")+
+  ## Title for tagging in patchwork, remove to save separately
+  labs(title = "A")+
   theme(legend.position = "bottom", 
         legend.key.width = grid::unit(2.5, "cm"),
         plot.title = element_text(hjust = 0.5))
@@ -479,6 +481,21 @@ states_ar_svi_longer <- states_ar_svi |>
 label_ar_svi <- states_ar_svi_longer |> 
   filter(SVI == max(SVI))
 
+states_ar_svi_cor <- states_ar_svi |> 
+  select(SVI, `Omicron BA.1*`, `Omicron BA.2*`, `Omicron BA.4*`, `Omicron BA.5*`, `Omicron XBB*`)
+
+## Calculating Correlations, p.values adjusted to multiple testing
+correlation_ar_svi <- correlation(data = states_ar_svi_cor,
+                                  p_adjust = "bonferroni", 
+                                  method = "pearson", 
+                                  ci = "default")
+
+## Filtering for plotting
+corr_ar_svi <- correlation_ar_svi |>
+  filter(Parameter1 == "SVI") |> 
+  mutate(p = if_else(p < 0.001, "< .001*", as.character(sprintf("%.2f",round(p, 2))))) |> 
+  mutate(across(where(is.numeric), ~round(.x, 2)))
+
 figure4c <-
   ggplot(data = states_ar_svi_longer,
          aes(x = SVI, 
@@ -498,18 +515,40 @@ figure4c <-
                            angle = -90,
                            color = "black",
                            size = 3)+
-  ggpmisc::stat_correlation(geom = "label",
-                            # use_label(c("R", "P")),
-                            aes(label = after_stat(paste(`grp.label`,
-                                                         r.label, 
-                                                         p.value.label,
-                                                         sep = "~`:`~"))),
-                            size = 6,
-                            # color = "black",
-                            # vstep = 0.01,
-                            label.x = rep(10,5),
-                            label.y = c(0.80, 0.77, 0.74, 0.71, 0.68))+
-  theme_minimal()+
+  geom_label_npc(data = corr_ar_svi,
+             size = 5,
+             aes(npcx = Inf, 
+                 npcy = c(1, 0.95, 0.90, 0.85, 0.80),
+                 label = paste(Parameter2, ": R = ", 
+                               r, 
+                               ", 95%CI [", 
+                               CI_low, ",",
+                               CI_high, 
+                               "], p = ",
+                               p, 
+                               sep = "")),
+             color = c(met.brewer(palette_name = "Archambault", 
+                                  n = 5, 
+                                  type = "discrete", 
+                                  direction = 1)),
+             inherit.aes = F)+
+  # ggpmisc::stat_correlation(geom = "label_npc",
+  #                           use_label(c("grp.label", "R", "R.CI", "P")),
+  #                           # aes(label = after_stat(paste(`grp.label`,
+  #                           #                              r.label, 
+  #                           #                              r.conf,
+  #                           #                              p.value.label,
+  #                           #                              sep = "~`:`~"))),
+  #                           r.conf.level = 0.95,
+  #                           na.rm = T,
+  #                           method = "pearson",
+  #                           small.p = T,
+#                           size = 6,
+#                           vstep = 0.1,
+#                           label.x = rep(1,5),
+#                           label.y = c(1, 0.95, 0.90, 0.85, 0.80), 
+#                           )+
+theme_minimal()+
   scale_color_met_d(palette = "Archambault")+
   scale_fill_met_d(palette = "Archambault")+
   scale_y_continuous(labels = scales::percent,
@@ -538,10 +577,11 @@ figure4c
 figure4c_inset <- figure4c + 
   inset_element(p = SVI_states_map+
                   theme(legend.position = "none"), 
-                left = -0.6, 
-                bottom = 0.65, 
+                # align_to = "plot",
+                left = -0.65, 
+                bottom = 0.58, 
                 right = 1, 
-                top = 1)
+                top = 1.02)
 figure4c_inset
 
 ggsave(filename = "Output/Plots/ExtraPlots/fig4c.png",
@@ -564,14 +604,33 @@ figure4a <- states_ar_svi |>
   geom_text(aes(label = `State Code`), 
             color = "white", 
             size = 2.5)+
-  ggpubr::stat_cor(method = "pearson",  
-                   cor.coef.name = "R", 
-                   geom = "label",
-                   aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
-                   label.x.npc = 0.60,
-                   r.digits = 2, 
-                   r.accuracy = 0.01, 
-                   size = 5)+
+  # ggpubr::stat_cor(method = "pearson",  
+  #                  cor.coef.name = "R", 
+  #                  geom = "label",
+  #                  aes(label = paste(..r.label..,..p.label.., sep = "~`,`~")),
+  #                  label.x.npc = 0.40,
+  #                  label.y.npc = 1,
+  #                  r.digits = 2, 
+  #                  r.accuracy = 0.01, 
+  #                  size = 4)+
+  geom_label_npc(data = 
+                   ## Filtering the correlation matrix to the correlation we are interested
+                   correlation_ar_svi |>
+                   filter(Parameter1 == "Omicron BA.1*",
+                          Parameter2 == "Omicron BA.2*")|> 
+                   mutate(p = if_else(p < 0.001, "< .001*", as.character(sprintf("%.2f",round(p, 2))))) |> 
+                   mutate(across(where(is.numeric), ~round(.x, 2))),
+                 size = 4,
+                 aes(npcx = 0.30, 
+                     npcy = 1,
+                     label = paste("R = ", r, 
+                                   ", 95%CI [", 
+                                   CI_low, ",",
+                                   CI_high, 
+                                   "] \np = ",
+                                   p, 
+                                   sep = "")),
+                 inherit.aes = F)+
   theme_minimal()+
   scale_x_continuous(labels = scales::percent)+
   scale_y_continuous(labels = scales::percent)+
@@ -618,13 +677,31 @@ figure4b <- states_ar_svi |>
   geom_text(aes(label = `State Code`), 
             color = "white", 
             size = 2.5)+
-  ggpubr::stat_cor(method = "pearson",  
-                   cor.coef.name = "R", 
-                   geom = "label",
-                   aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
-                   r.digits = 2, 
-                   r.accuracy = 0.01, 
-                   size = 5)+
+  # ggpubr::stat_cor(method = "pearson",  
+  #                  cor.coef.name = "R", 
+  #                  geom = "label",
+  #                  aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+  #                  r.digits = 2, 
+  #                  r.accuracy = 0.01, 
+  #                  size = 4)+
+  geom_label_npc(data = 
+                   ## Filtering the correlation matrix to the correlation we are interested
+                   correlation_ar_svi |>
+                   filter(Parameter1 == "Omicron BA.1*",
+                          Parameter2 == "Omicron BA.5*")|> 
+                   mutate(p = if_else(p < 0.001, "< .001*", as.character(sprintf("%.2f",round(p, 2))))) |> 
+                   mutate(across(where(is.numeric), ~round(.x, 2))),
+                 size = 4,
+                 aes(npcx = 0, 
+                     npcy = 1,
+                     label = paste("R = ", r, 
+                                   ", 95%CI [", 
+                                   CI_low, ",",
+                                   CI_high, 
+                                   "] \np = ",
+                                   p, 
+                                   sep = "")),
+                 inherit.aes = F)+
   theme_minimal()+
   scale_x_continuous(labels = scales::percent)+
   scale_y_continuous(labels = scales::percent)+
@@ -659,16 +736,16 @@ ggsave(filename = "Output/Plots/ExtraPlots/fig4b.png",
 
 library(patchwork)
 
-figure4 <- (((figure4a+
-                theme(axis.title.x = element_blank(),
-                      axis.text.x = element_blank())) / 
-               (figure4b))|
-              (figure4c_inset))+
-  plot_layout(widths = c(1,2),
+figure4 <- ((figure4c_inset)|
+              ((figure4a+
+                  theme(axis.title.x = element_blank(),
+                        axis.text.x = element_blank())) / 
+                 (figure4b)))+
+  plot_layout(widths = c(3,1),
               heights = c(1,1),
               guides = 'collect',
               tag_level = "new")+
-  plot_annotation(tag_levels = 'A')&
+  plot_annotation(tag_levels = list(c('B', '', 'C', 'D')))&
   theme(legend.position = "bottom")
 figure4
 
