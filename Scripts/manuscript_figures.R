@@ -741,7 +741,7 @@ figure4 <- ((figure4c_inset)|
                   theme(axis.title.x = element_blank(),
                         axis.text.x = element_blank())) / 
                  (figure4b)))+
-  plot_layout(widths = c(3,1),
+  plot_layout(widths = c(2,1),
               heights = c(1,1),
               guides = 'collect',
               tag_level = "new")+
@@ -759,7 +759,7 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/Fi
        plot = figure4, 
        width = 16, 
        height = 9,
-       dpi = 200)
+       dpi = 300)
 
 ## Figure AB patchwork
 figure4_ab <- (figure4a | figure4b)+
@@ -1053,13 +1053,13 @@ patchwork_figureS8 <- (figureS7a + figureS7)+
 patchwork_figureS8
 
 ggsave(filename = "Output/Plots/ExtraPlots/Fig.S8.png", 
-       plot = patchwork_figureS7, 
+       plot = patchwork_figureS8, 
        width = 16, 
        height = 9, 
        dpi = 100)
 
 ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/Extra Figures/Fig.S8.pdf", 
-       plot = patchwork_figureS7, 
+       plot = patchwork_figureS8, 
        width = 16,
        height = 9, 
        dpi = 100)
