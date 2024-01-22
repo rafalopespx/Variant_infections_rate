@@ -8,7 +8,7 @@ lapply(packs,require, character.only = TRUE)
 
 # Loading functions
 source("Scripts/Functions/functions.R")
-source("Scripts/get_svi.R")
+source("Scripts/Functions/get_svi.R")
 
 ## Loading data sources
 states_fulldata<-vroom("Data/state_full_data.csv.xz")
@@ -28,10 +28,6 @@ states_attack_rates_wider <- states_attack_rates |>
   pivot_wider(names_from = "variant", 
               values_from = "attack_rate") |> 
   left_join(states_abb)
-
-# Loading functions
-source("Scripts/Functions/functions.R")
-source("Scripts/Functions/get_svi.R")
 
 # ## SVI variable vector of all states
 # us <- unique(fips_codes$state)[1:51]

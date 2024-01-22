@@ -20,6 +20,8 @@ plot_infections_daily<-infections_variants_daily |>
   ggplot(aes(x = days, y = I, 
              col = variant, fill = variant))+
   geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), 
+              alpha = 0.10)+
   theme_minimal()+
   theme(legend.position = "bottom", 
         axis.text.x = element_text(angle = 90))+
@@ -35,7 +37,7 @@ plot_infections_daily<-infections_variants_daily |>
 plot_infections_daily
 
 ## Saving infections plot
-ggsave(filename = "Output/Plots/plt_infections_daily_states.png", 
+ggsave(filename = "Output/Plots/ExtraPlots/plt_infections_daily_states.png", 
        plot = plot_infections_daily, 
        width = 15,
        height = 9, 
@@ -76,6 +78,8 @@ plt_fun<-function(x, title){
     ggplot(aes(x = days, y = I, 
                col = variant, fill = variant))+
     geom_line()+
+    geom_ribbon(aes(ymin = lower, ymax = upper), 
+                alpha = 0.10)+
     theme_minimal()+
     theme(legend.position = "bottom", 
           axis.text.x = element_text(angle = 90))+
@@ -98,7 +102,7 @@ plot_infections_list_daily<-lapply(states, function(x){
     filter(name_states == x) |>
     plt_fun(title = x)
   
-  ggsave(filename = paste0("Output/Plots/States_infections/plt_infections_estimates_", x, "_daily.png"),
+  ggsave(filename = paste0("Output/Plots/ExtraPlots/States_infections/plt_infections_estimates_", x, "_daily.png"),
          width = 15,
          height = 9,
          dpi = 100)

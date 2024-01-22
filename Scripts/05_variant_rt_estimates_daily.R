@@ -101,8 +101,10 @@ rt_fun <- function(df, wallinga_teunis = FALSE){
   
   #merges the Rt value with the other variant data and renames Rt to have variant suffix
   merge <- df %>%
-    dplyr::arrange(days) %>% #keep in week so that the day variable lines up with the first week
-    tibble::rowid_to_column(var = "day") %>% #used to merge with the estimate_R variable output for the day
+    #keep in week so that the day variable lines up with the first week
+    dplyr::arrange(days) %>% 
+    #used to merge with the estimate_R variable output for the day
+    tibble::rowid_to_column(var = "day") %>% 
     dplyr::left_join(rt_df, by = c("day"))
   
   return(merge)
@@ -160,6 +162,14 @@ stopCluster(cl)
 ## Prompting messages, to monitor progress
 # cat("Finished variant: ", i, "over all states \n")
 # }
+
+rt_list <- rt_list |> 
+  dplyr::select(-lower, -upper) |> 
+  rename(infections = I,
+         infections_lower = lower.x,
+         infections_upper = upper.x,
+         Rt_lower = lower.y,
+         Rt_upper = upper.y)
 
 vroom_write(x = rt_list, 
             file = "Output/Tables/rt_estimates_cori_method_daily.tsv.xz")

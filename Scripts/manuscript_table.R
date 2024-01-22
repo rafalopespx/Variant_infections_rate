@@ -51,17 +51,23 @@ variant_count<-vroom("Data/variant_counts_us.csv.xz") |>
 estimates_rt_incidence <- vroom("Data/state_full_data.csv.xz")
 
 ## Peak of infections, by state and variants
-peak_infections_by_variant_table <- estimates_rt_incidence |> 
+peak_infections_by_variant_table <- rt_estimates |> 
   reframe(sum_infections = sum(infections, na.rm = T),
+          upper_infections = sum(infections_upper, na.rm = T),
+          lower_infections = sum(infections_lower, na.rm = T),
           .by = c(days, variant)) %>%
-  group_by(variant) |> 
-  summarise(peak_infections = max(sum_infections, na.rm = T)) %>%
-  # add_row(variant = "Peak", summarise(., across(where(is.numeric), max))) |>
+  reframe(peak_infections = max(sum_infections, na.rm = T),
+          upper_infections = max(upper_infections, na.rm = T),
+          lower_infections = max(lower_infections, na.rm = T),
+          .by = variant) %>%
+  pivot_longer(cols = peak_infections:lower_infections,
+               names_to = 'names',
+               values_to = 'values') |> 
   tbl_summary(by = variant, 
-              # include = peak_infections,
-              type = list(everything() ~ "continuous"),
-              statistic = all_continuous() ~ "{mean}",
-              label = list(peak_infections ~ "")) |> 
+              include = values,
+              # type = list(everything() ~ "continuous"),
+              statistic = all_continuous() ~ "{median}, \n ({min}, {max})",
+              label = list(values ~ 'Peak (CrI)')) |> 
   modify_header(list(label ~ "", all_stat_cols() ~ "**{level}**")) |> 
   modify_footnote(all_stat_cols() ~ NA) |> 
   modify_spanning_header(c("stat_1", "stat_2", "stat_3", "stat_4", "stat_5") ~ "**Variant Categories**") |> 
@@ -69,18 +75,21 @@ peak_infections_by_variant_table <- estimates_rt_incidence |>
   bold_labels()
 peak_infections_by_variant_table
 
-peak_infections_by_state_table <- estimates_rt_incidence |> 
-  reframe(sum_infections = sum(infections, na.rm = T),
-          .by = c(days, name_states, variant)) %>%
-  group_by(name_states, variant) |> 
-  summarise(peak_infections = max(sum_infections, na.rm = T)) |> 
-  # filter(name_states %in% c("California", "New York", "Texas", "Florida")) |> 
+peak_infections_by_state_table <- rt_estimates |> 
+  reframe(median = max(infections, na.rm = T),
+          upper = max(infections_upper, na.rm = T),
+          lower = max(infections_lower, na.rm = T),
+          .by = c(name_states, variant)) |> 
+  pivot_longer(cols = median:lower,
+               names_to = 'names',
+               values_to = 'values') |>
+  arrange(name_states) |> 
   pivot_wider(names_from = name_states,
-              values_from = peak_infections) %>%
-  # add_row(variant = "Peak", summarise(., across(where(is.numeric), max))) |>
+              values_from = values) %>%
   tbl_summary(by = variant, 
-              type = list(everything() ~ "continuous"),
-              statistic = list(all_continuous() ~ "{mean}")) |> 
+              include = -names,
+              # type = list(everything() ~ "continuous"),
+              statistic = list(all_continuous() ~ "{mean} \n ({min}, {max})")) |> 
   modify_header(label ~ "**State**", all_stat_cols() ~ "**{level}**") |> 
   modify_footnote(all_stat_cols() ~ NA) |> 
   modify_spanning_header(c("stat_1", "stat_2", "stat_3", "stat_4", "stat_5") ~ "**Variant Categories**") |> 
@@ -104,14 +113,20 @@ peak_infections_table |>
   gt::gtsave(filename = "Output/Tables/peak_infections_table.docx")
 
 ## Total of infections, by state and variant
-total_infections_by_variant_table <- estimates_rt_incidence |> 
-  group_by(variant) |> 
-  summarise(total_infections = sum(infections, na.rm = T)) %>%
+total_infections_by_variant_table <- rt_estimates |> 
+  reframe(total_infections = sum(infections, na.rm = T),
+          upper_infections = sum(infections_upper, na.rm = T),
+          lower_infections = sum(infections_lower, na.rm = T),
+          .by = c(variant)) %>%
   add_row(variant = "Overall", summarise(., across(where(is.numeric), sum))) |> 
+  pivot_longer(cols = total_infections:lower_infections,
+               names_to = 'names',
+               values_to = 'values') |>
   tbl_summary(by = variant, 
-              type = list(everything() ~ "continuous"),
-              statistic = all_continuous() ~ "{mean}",
-              label = list(total_infections ~ "")) |> 
+              include = values,
+              # type = list(everything() ~ "continuous"),
+              statistic = all_continuous() ~ "{mean} ({min}, {max})",
+              label = list(values ~ 'Total (CrI)')) |> 
   modify_header(list(label ~ "", all_stat_cols() ~ "**{level}**")) |> 
   modify_footnote(all_stat_cols() ~ NA) |> 
   modify_spanning_header(c("stat_1", "stat_2", "stat_3", "stat_4", "stat_5") ~ "**Variant Categories**") |> 
@@ -119,15 +134,33 @@ total_infections_by_variant_table <- estimates_rt_incidence |>
   bold_labels()
 total_infections_by_variant_table
 
-total_infections_by_state_table <- estimates_rt_incidence |> 
-  group_by(name_states, variant) |> 
-  summarise(total_infections = sum(infections, na.rm = T)) |> 
+states_variant_mmm <- rt_estimates |> 
+  reframe(median = sum(infections, na.rm = T),
+          upper = sum(infections_upper, na.rm = T),
+          lower = sum(infections_lower, na.rm = T),
+          .by = c(name_states, variant)) %>%
+  arrange(name_states)
+
+states_variant_totals <- states_variant_mmm |> 
+  reframe(median = sum(median, na.rm = T),
+          upper = sum(upper, na.rm = T),
+          lower = sum(lower, na.rm = T),
+          .by = name_states) |> 
+  mutate(variant = "Total")
+
+states_variant_table <- bind_rows(states_variant_mmm, states_variant_totals) |> 
+  arrange(name_states, variant)
+  
+total_infections_by_state_table <- states_variant_table |> 
+  pivot_longer(cols = median:lower,
+               names_to = 'names',
+               values_to = 'values') |>
   pivot_wider(names_from = name_states,
-              values_from = total_infections) %>%
-  add_row(variant = "Total", summarise(., across(where(is.numeric), sum))) |>
+              values_from = values) %>%
   tbl_summary(by = variant, 
+              include = -names,
               type = list(everything() ~ "continuous"),
-              statistic = list(all_continuous() ~ "{mean}")) |> 
+              statistic = list(all_continuous() ~ "{mean} ({min}, {max})")) |> 
   modify_header(label ~ "**State**", all_stat_cols() ~ "**{level}**") |> 
   modify_footnote(all_stat_cols() ~ NA) |> 
   modify_spanning_header(c("stat_1", "stat_2", "stat_3", "stat_4", "stat_5") ~ "**Variant Categories**") |> 
@@ -170,7 +203,7 @@ total_attack_rate_us_table <- estimates_rt_incidence |>
               statistic = list(all_continuous() ~ "{mean}% ({max}%, {min}%)"),
               label = list(values ~ ""),
               digits = list(all_continuous() ~ 1))   |> 
-  add_overall() |> 
+  # add_overall(last = TRUE) |> 
   modify_header(label ~ "", 
                 all_stat_cols() ~ "**{level}**") |> 
   modify_footnote(all_stat_cols() ~ NA) |> 
@@ -252,8 +285,11 @@ us_total_table <- tbl_stack(list(total_attack_rate_us_table,
                             group_header = list("Attack Rate \n mean (max, min)", 
                                              "Peak of Infections", 
                                              "Total of Infections")) |> 
-  modify_caption("**Table 1. Variant-specific Attack Rate, Peak and Total of infections**")
+  modify_caption("**Table 1. Variant-specific Attack Rate, Peak and Total of infections**") |> 
+  bold_labels()
 us_total_table
+
+## To-do generate a Total column for AR and the Peak
 
 us_total_table |> 
   as_gt() |> 

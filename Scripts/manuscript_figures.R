@@ -36,21 +36,25 @@ estimates_rt_incidence <- vroom("Data/state_full_data.csv.xz")
 ## Figure1
 figure1a_data <- rt_estimates |> 
   filter(days <= "2023-03-01") |>
-  ## Renaming infections
-  rename(infections = I) |>
   group_by(name_states, days) |> 
-  summarise(infections = sum(infections)) |> 
+  summarise(infections = sum(infections, na.rm = T),
+            upper = sum(infections_upper, na.rm = T),
+            lower = sum(infections_lower, na.rm = T)) |> 
   left_join(pop_states, by = c("name_states" = "state")) |>
   ## Creating incidence per 100k
   mutate(incidence = (infections/pop)*1e5, 
          percentual_incidence = round(incidence/pop, 2)) 
 
-figure1a_data_national <- estimates_rt_incidence |>
+figure1a_data_national <- rt_estimates |>
   filter(days <= "2023-03-01") |>
-  reframe(mean_infections = sum(infections, na.rm = T),
+  reframe(mean = sum(infections, na.rm = T),
+          upper = sum(infections_upper, na.rm = T),
+          lower = sum(infections_lower, na.rm = T),
           .by = c(days))
 
-scaleFactor <- max(figure1a_data$infections, na.rm = T)/max(figure1a_data_national$mean_infections, na.rm = T)
+scaleFactor <- max(figure1a_data$upper, 
+                   na.rm = T)/max(figure1a_data_national$upper, 
+                                  na.rm = T)
 
 ## Figure 1A
 figure1a<-figure1a_data |> 
@@ -58,10 +62,18 @@ figure1a<-figure1a_data |>
              group = name_states))+
   geom_line(alpha = .1)+
   geom_line(data = figure1a_data_national,
-            aes(x = days, y = mean_infections*scaleFactor, 
+            aes(x = days, y = mean*scaleFactor, 
                 col = "Mean infections per day"), 
             inherit.aes = F, 
             show.legend = F)+
+  geom_ribbon(data = figure1a_data_national,
+              aes(x = days, y = mean*scaleFactor, 
+                  ymin = lower*scaleFactor, 
+                  ymax = upper*scaleFactor,
+                  fill = "CrI"), 
+              alpha = 0.10,
+              inherit.aes = F, 
+              show.legend = F)+
   labs(x = NULL, 
        y = "Infections per days \n State-level", 
        title = "All variants")+
@@ -77,9 +89,9 @@ figure1a<-figure1a_data |>
                      breaks = pretty(figure1a_data$infections),
                      sec.axis = sec_axis(~./scaleFactor, 
                                          labels = scales::label_comma(),
-                                         breaks = pretty(figure1a_data_national$mean_infections),
+                                         breaks = pretty(figure1a_data_national$mean),
                                          name = "Infections per day \n Whole country"))+
-  scale_color_manual(name = "", values = "firebrick1")
+  scale_color_manual(name = "", values = c("firebrick1", "firebrick1"))
 figure1a
 
 ggsave(filename = "Output/Plots/ExtraPlots/Fig.1a.png", 
@@ -95,18 +107,22 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/Ex
        dpi = 200)
 
 ## Figure 1B
-figure1b_data <- estimates_rt_incidence |> 
-  filter(days <= "2023-03-01", incidence >= 10) |>
+figure1b_data <- rt_estimates |> 
+  filter(days <= "2023-03-01") |> 
   reframe(infections = sum(infections, na.rm = T), 
+          upper = sum(infections_upper, na.rm = T),
+          lower = sum(infections_lower, na.rm = T),
           .by = c(days, name_states, variant))
 
-figure1b_data_national <- estimates_rt_incidence |>
-  filter(days <= "2023-03-01", incidence >= 10) |>
-  reframe(mean_infections = sum(infections, na.rm = T),
+figure1b_data_national <- rt_estimates |>
+  filter(days <= "2023-03-01") |>
+  reframe(mean = sum(infections, na.rm = T),
+          upper = sum(infections_upper, na.rm = T),
+          lower = sum(infections_lower, na.rm = T),
           .by = c(days, variant))
 
-scaleFactor <- max(figure1b_data$infections, 
-                   na.rm = T)/max(figure1b_data_national$mean_infections, 
+scaleFactor <- max(figure1b_data$upper, 
+                   na.rm = T)/max(figure1b_data_national$upper, 
                                   na.rm = T)
 
 figure1b <- figure1b_data |> 
@@ -115,11 +131,23 @@ figure1b <- figure1b_data |>
              group = name_states))+
   geom_line(alpha = .1, 
             show.legend = F)+
+  # geom_ribbon(aes(ymin = lower, 
+  #                 ymax = upper, 
+  #                 fill = "CrI"),
+  #             alpha = 0.10)+
   geom_line(data = figure1b_data_national,
-            aes(x = days, y = mean_infections*scaleFactor, 
+            aes(x = days, y = mean*scaleFactor, 
                 col = "National mean"),
             # show.legend = F,
             inherit.aes = F)+
+  geom_ribbon(data = figure1b_data_national,
+              aes(x = days, y = mean*scaleFactor, 
+                  ymin = lower*scaleFactor, 
+                  ymax = upper*scaleFactor,
+                  fill = "CrI"), 
+              alpha = 0.10,
+              inherit.aes = F, 
+              show.legend = F)+
   theme_minimal()+
   facet_wrap(variant~., ncol = 1, scales = "free_y")+
   labs(x = "Date", y = "Infections per day \n State-level")+
@@ -482,7 +510,7 @@ label_ar_svi <- states_ar_svi_longer |>
   filter(SVI == max(SVI))
 
 states_ar_svi_cor <- states_ar_svi |> 
-  select(SVI, `Omicron BA.1*`, `Omicron BA.2*`, `Omicron BA.4*`, `Omicron BA.5*`, `Omicron XBB*`)
+  dplyr::select(SVI, `Omicron BA.1*`, `Omicron BA.2*`, `Omicron BA.4*`, `Omicron BA.5*`, `Omicron XBB*`)
 
 ## Calculating Correlations, p.values adjusted to multiple testing
 correlation_ar_svi <- correlation(data = states_ar_svi_cor,
