@@ -32,6 +32,11 @@ variant_count<-vroom("Data/variant_counts_us.csv.xz") |>
 ## Loading estimates_rt_incidence dataset
 estimates_rt_incidence <- vroom("Data/state_full_data.csv.xz")
 
+colors <- MetBrewer::met.brewer(palette_name = "Archambault", 
+                                type = "discrete", 
+                                n = 6)
+colors <- colors[1:5]
+
 
 ## Figure1
 figure1a_data <- rt_estimates |> 
@@ -156,10 +161,8 @@ figure1b <- figure1b_data |>
                      sec.axis = sec_axis(~./scaleFactor, 
                                          labels = scales::label_comma(),
                                          name = "Infections per day \n Whole country", ))+
-  scale_color_manual(values = c("firebrick1", 
-                                MetBrewer::met.brewer(palette_name = "Archambault", 
-                                                      type = "discrete", 
-                                                      n = 5)),
+  scale_color_manual(values = c(colors,
+                                "firebrick1"),
                      name = "")+
   theme(legend.position = "none", 
         strip.text.x.top = element_text(hjust = 0),
@@ -236,7 +239,7 @@ figure2a<- figure2a_data |>
             aes(label = `State Code`), 
             vjust = 2)+
   theme_minimal()+
-  MetBrewer::scale_color_met_d(palette_name = "Archambault", name = "")+
+  scale_color_manual(values = colors)+
   theme(legend.position = "none", 
         axis.title = element_text(size = 14), 
         axis.text = element_text(size = 14))+
@@ -273,11 +276,12 @@ map_attackrate<-usmap |>
             by = c("NAME" = "name_states")) |> 
   mutate(NAME = droplevels(factor(NAME))) |> 
   filter(!is.na(variant)) |> 
-  mutate(attack_rate_binned = cut(attack_rate, 
-                                  breaks = pretty(attack_rate, n = 10),
-                                  right = T))
+  mutate(attack_rate_binned = factor(cut(attack_rate, 
+                                         breaks = pretty(attack_rate, n = 10),
+                                         right = T)))
 
-unique(map_attackrate$attack_rate_binned)
+breaks <- unique(map_attackrate$attack_rate_binned)
+labels <- seq(0,60,5)
 
 attack_rate_map<-function(x){
   # Remove plot axis
@@ -289,21 +293,25 @@ attack_rate_map<-function(x){
     filter(variant == x) |> 
     ggplot()+
     geom_sf(aes(fill = attack_rate_binned), 
-            color = "grey50", 
+            color = NA, 
             size = 0.2)+
     theme_map()+
-    scale_fill_manual(values = met.brewer(palette_name = "Johnson", 
-                                          n = 13, 
-                                          type = "continuous", 
-                                          direction = -1), 
-                      drop = F, 
+    scale_fill_manual(values = met.brewer(palette_name = "Johnson",
+                                          n = 13,
+                                          type = "continuous",
+                                          direction = -1),
+                      drop = F,
                       labels = waiver(),
                       name = "Attack rate \n (%) of pop. ever infected",
-                      guide = guide_bins(keywidth = grid::unit(1.2, "cm"),
-                                         title.position = "top", title.hjust = 0.5, 
-                                         show.limits = T), 
-                      aesthetics = c("color", "fill"))+
+                      guide = guide_bins(title.hjust = 0.5, 
+                                         barwidth = grid::unit(1, "cm")),
+                      breaks = breaks)+
     theme(legend.position = "bottom", 
+          legend.title.position = "top",
+          legend.justification.top = "center",
+          legend.direction = "horizontal",
+          legend.justification = "center",
+          # legend.key.width = grid::unit(3,"cm"),
           legend.title = element_text(size = 14), 
           legend.text = element_text(size = 14))+
     labs(subtitle = x)
@@ -318,8 +326,8 @@ map_list<-lapply(variants, attack_rate_map)
 patchwork_map<-(((map_list[[1]] / map_list[[4]]) | (map_list[[2]]/ map_list[[3]] / map_list[[5]]))/guide_area())+
   plot_annotation(title = 'B')+
   plot_layout(guides = "collect", 
-              widths = c(5, .5),
-              heights = c(5, .5))&
+              widths = c(3, 1),
+              heights = c(3, 1))&
   theme(legend.position = "bottom")
 patchwork_map
 
@@ -340,13 +348,18 @@ patchwork_figure2<-(figure2a +
                             axis.text.x = element_text(angle = 90, 
                                                        size = 14)) | 
                       (patchwork_map+theme(axis.title = element_text(size = 14))))+
-  plot_layout(widths = c(1, 3), 
+  plot_layout(widths = c(1,3), 
               heights = c(1,1), 
-              tag_level = 'new')+
-  plot_annotation(tag_levels = list(c('A', 'B'), '', '', ''))
+              tag_level = 'new')
 patchwork_figure2
 
 ggsave(filename = "Output/Plots/Fig.2.png", 
+       plot = patchwork_figure2, 
+       width = 16,
+       height = 9, 
+       dpi = 100)
+
+ggsave(filename = "Output/Plots/Fig.2.pdf", 
        plot = patchwork_figure2, 
        width = 16,
        height = 9, 
@@ -404,14 +417,8 @@ figure3<- figure3_data |>
                                  by = "2 months"),
                limits = c(min(figure3_data$days, na.rm = T), 
                           max(figure3_data$days, na.rm = T)))+
-  scale_color_manual(values = c(met.brewer(palette_name = "Archambault",
-                                           type = "discrete", 
-                                           direction = 1,
-                                           n = 5)))+
-  scale_fill_manual(values = c(met.brewer(palette_name = "Archambault",
-                                          type = "discrete", 
-                                          direction = 1,
-                                          n = 5)))+
+  scale_color_manual(values = c(colors))+
+  scale_fill_manual(values = c(colors))+
   theme(legend.title = element_blank(), 
         legend.position = "bottom", 
         axis.text = element_text(size = 14),
@@ -464,6 +471,7 @@ states_svi <- sf::st_read("Data/states_svi.shp") |>
 SVI_states_map <- states_svi |> 
   ggplot()+
   geom_sf(aes(fill = SVI), 
+          color = NA,
           show.legend = F, 
           lwd = 0.1)+
   theme_void()+
@@ -476,7 +484,7 @@ SVI_states_map <- states_svi |>
                                           nbin = 10)
   )+
   ## Title for tagging in patchwork, remove to save separately
-  labs(title = "A")+
+  # labs(title = "A")+
   theme(legend.position = "bottom", 
         legend.key.width = grid::unit(2.5, "cm"),
         plot.title = element_text(hjust = 0.5))
@@ -543,42 +551,39 @@ figure4c <-
                            angle = -90,
                            color = "black",
                            size = 3)+
-  geom_label_npc(data = corr_ar_svi,
-             size = 5,
-             aes(npcx = Inf, 
-                 npcy = c(1, 0.95, 0.90, 0.85, 0.80),
-                 label = paste(Parameter2, ": R = ", 
-                               r, 
-                               ", 95%CI [", 
-                               CI_low, ",",
-                               CI_high, 
-                               "], p = ",
-                               p, 
-                               sep = "")),
-             color = c(met.brewer(palette_name = "Archambault", 
-                                  n = 5, 
-                                  type = "discrete", 
-                                  direction = 1)),
-             inherit.aes = F)+
-  # ggpmisc::stat_correlation(geom = "label_npc",
-  #                           use_label(c("grp.label", "R", "R.CI", "P")),
-  #                           # aes(label = after_stat(paste(`grp.label`,
-  #                           #                              r.label, 
-  #                           #                              r.conf,
-  #                           #                              p.value.label,
-  #                           #                              sep = "~`:`~"))),
-  #                           r.conf.level = 0.95,
-  #                           na.rm = T,
-  #                           method = "pearson",
-  #                           small.p = T,
-#                           size = 6,
-#                           vstep = 0.1,
-#                           label.x = rep(1,5),
-#                           label.y = c(1, 0.95, 0.90, 0.85, 0.80), 
-#                           )+
-theme_minimal()+
-  scale_color_met_d(palette = "Archambault")+
-  scale_fill_met_d(palette = "Archambault")+
+  #   geom_label_npc(data = corr_ar_svi,
+  #                  size = 5,
+  #                  aes(npcx = Inf, 
+  #                      npcy = c(1, 0.95, 0.90, 0.85, 0.80),
+  #                      label = paste(Parameter2, ": R = ", 
+  #                                    r, 
+  #                                    ", 95%CI [", 
+  #                                    CI_low, ",",
+  #                                    CI_high, 
+  #                                    "], p = ",
+  #                                    p, 
+#                                    sep = "")),
+#                  color = c(colors)),
+# inherit.aes = F)+
+ggpmisc::stat_correlation(geom = "label_npc",
+                          use_label(c("grp.label", "R", "R.CI", "P")),
+                          # aes(label = after_stat(paste(`grp.label`,
+                          #                              r.label,
+                          #                              r.conf,
+                          #                              p.value.label,
+                          #                              sep = "~`:`~"))),
+                          r.conf.level = 0.95,
+                          na.rm = T,
+                          method = "pearson",
+                          small.p = T,
+                          size = 6,
+                          vstep = 0.1,
+                          label.x = rep(1,5),
+                          label.y = c(1, 0.95, 0.90, 0.85, 0.80),
+)+
+  theme_minimal()+
+  scale_color_manual(values = colors)+
+  scale_fill_manual(values = colors)+
   scale_y_continuous(labels = scales::percent,
                      limits = c(0,0.80))+
   scale_x_continuous(breaks = seq(4.5, 11.5, 1))+
@@ -613,6 +618,12 @@ figure4c_inset <- figure4c +
 figure4c_inset
 
 ggsave(filename = "Output/Plots/ExtraPlots/fig4c.png",
+       plot = figure4c_inset, 
+       width = 16, 
+       height = 9, 
+       dpi = 100)
+
+ggsave(filename = "Output/Plots/ExtraPlots/fig4c.pdf",
        plot = figure4c_inset, 
        width = 16, 
        height = 9, 
@@ -769,15 +780,20 @@ figure4 <- ((figure4c_inset)|
                   theme(axis.title.x = element_blank(),
                         axis.text.x = element_blank())) / 
                  (figure4b)))+
-  plot_layout(widths = c(2,1),
+  plot_layout(widths = c(3,1),
               heights = c(1,1),
               guides = 'collect',
-              tag_level = "new")+
-  plot_annotation(tag_levels = list(c('B', '', 'C', 'D')))&
+              tag_level = "new")&
   theme(legend.position = "bottom")
 figure4
 
 ggsave(filename = "Output/Plots/Fig.4.png",
+       plot = figure4, 
+       width = 16, 
+       height = 9,
+       dpi = 100)
+
+ggsave(filename = "Output/Plots/Fig.4.pdf",
        plot = figure4, 
        width = 16, 
        height = 9,
@@ -827,8 +843,7 @@ figureS2 <- variant_count |>
   ggplot(aes(x = days, y = n, fill = variant))+
   geom_col(width = 6)+
   theme_minimal()+
-  scale_fill_met_d(palette_name = "Archambault", 
-                   name = "")+
+  scale_fill_manual(values = colors)+
   theme(legend.position = "bottom", 
         axis.title.y = element_text(size = 14),
         axis.title.x = element_blank(),
@@ -856,8 +871,7 @@ figureS3 <- variant_count |>
   ggplot(aes(x = days, y = n, fill = variant, group = variant))+
   geom_col(width = 7)+
   theme_minimal()+
-  scale_fill_met_d(palette_name = "Archambault", 
-                   name = "")+
+  scale_fill_manual(values = colors)+
   theme(legend.position = "bottom")+
   scale_x_date(name = "Date", date_breaks = "2 months", date_labels = "%b '%y")+
   labs(y = "Number of genomic sequences")+
@@ -884,8 +898,7 @@ figureS4 <- variant_count |>
   ggplot(aes(x = days, y = freq, fill = variant, group = variant))+
   geom_col(position = position_fill(), width = 7)+
   theme_minimal()+
-  scale_fill_met_d(palette_name = "Archambault", 
-                   name = "")+
+  scale_fill_manual(values = colors)+
   theme(legend.position = "bottom")+
   scale_x_date(name = "Date", date_breaks = "2 months", date_labels = "%b '%y")+
   labs(y = "Frequency (%) \n in the number of genomic sequences")+
@@ -924,7 +937,7 @@ figureS5<-figureS5_data |>
             vjust = -0.5,
             color = "grey50", show.legend = F)+
   lims(y = c(NA, 65))+
-  MetBrewer::scale_fill_met_d(palette_name = "Archambault", name = "")+
+  scale_fill_manual(values = colors)+
   facet_geo(`State Code`~., scales = "free", strip.position = "right")+
   labs(y = "Attack rate \n (%) of pop. ever infected")+
   theme_minimal()+
@@ -1044,7 +1057,7 @@ figure_dataS7b <- rt_ratio |>
   mutate(name_states2 = tidytext::reorder_within(name_states, median, within = ratios)) |> 
   left_join(states_svi)
 
-figureS7 <- figure_dataS7b |>
+figureS7b <- figure_dataS7b |>
   ggplot(aes(y = median, ymin = lower, ymax = upper, 
              x = ratios))+
   geom_hline(yintercept = 1, show.legend = F, color = "grey9")+
@@ -1059,9 +1072,9 @@ figureS7 <- figure_dataS7b |>
         axis.title.y = element_text(size = 14),
         axis.title.x = element_blank(),
         axis.text = element_text(size = 14))+
-  MetBrewer::scale_color_met_d(palette_name = "Johnson", name = "SVI", direction = -1)+
+  MetBrewer::scale_color_met_d(palette_name = "Johnson", direction = -1)+
   labs(y = 'Average (Rt) ratio', x = 'Ratios')
-figureS7
+figureS7b
 
 ggsave(filename = "Output/Plots/Fig.S7.png", 
        plot = figureS7b, 
@@ -1076,7 +1089,7 @@ ggsave(filename = "~/Dropbox/GLab_team/papers/2023_Omicron-infections/Figures/Fi
        dpi = 200)
 
 ## Patchwork figure S7
-patchwork_figureS8 <- (figureS7a + figureS7)+
+patchwork_figureS8 <- (figureS7a + figureS7b)+
   plot_annotation(tag_levels = 'A')
 patchwork_figureS8
 
