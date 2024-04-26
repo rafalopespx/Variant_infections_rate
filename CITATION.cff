@@ -1,0 +1,21 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Lopes"
+  given-names: "Rafael"
+  orcid: "https://orcid.org/my-orcid?orcid=0000-0002-9416-6145"
+title: "Combining genomic data and infection estimates to characterize the complex dynamics of SARS-CoV-2 Omicron variants in the United States"
+version: 1.0.0
+doi: 10.5281/zenodo.11074202
+date-released: 2024-01-22
+url: "https://github.com/github-linguist/linguist"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Lopes"
+    given-names: "Rafael"
+    orcid: "https://orcid.org/my-orcid?orcid=0000-0002-9416-6145"
+  doi: "10.1101/2023.11.07.23298178"
+  journal: "MedRxiv"
+  title: "Combining genomic data and infection estimates to characterize the complex dynamics of SARS-CoV-2 Omicron variants in the United States"
+  year: 2024
