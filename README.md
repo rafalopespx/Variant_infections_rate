@@ -1,6 +1,8 @@
 README
 ================
 
+[![DOI](https://zenodo.org/badge/624489222.svg)](https://zenodo.org/doi/10.5281/zenodo.11074202)
+
 # Combining genomic data and infection estimates to characterize the complex dynamics of SARS-CoV-2 Omicron variants in the United States
 
 Rafael Lopes1,\*, Kien Pham1, Fayette Klaassen2, Melanie H. Chitwood1,
